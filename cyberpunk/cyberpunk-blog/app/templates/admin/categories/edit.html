@@ -1,0 +1,616 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if category %}编辑分类 - {{ category.name }}{% else %}创建新分类{% endif %} - {{ site_title or '赛博朋克博客' }}{% endblock %}
+
+{% block css %}
+    <style>
+        /* 分类编辑页面样式 */
+        .category-editor-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        
+        .editor-content {
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.7rem;
+            color: #ddd;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 1rem 1.2rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+            background: rgba(10, 10, 15, 0.9);
+        }
+        
+        .form-input::placeholder {
+            color: #777;
+        }
+        
+        .form-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem 1.2rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            resize: vertical;
+        }
+        
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+            background: rgba(10, 10, 15, 0.9);
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 1rem 1.2rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+        }
+        
+        /* 预览区域 */
+        .preview-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .preview-title {
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .category-preview {
+            padding: 1.5rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .category-preview-icon {
+            font-size: 2rem;
+            color: var(--neon-color);
+        }
+        
+        .category-preview-info {
+            flex: 1;
+        }
+        
+        .category-preview-name {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 0.3rem;
+        }
+        
+        .category-preview-slug {
+            color: var(--neon-color);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .category-preview-description {
+            color: #777;
+            font-size: 0.9rem;
+        }
+        
+        /* 字段说明 */
+        .field-description {
+            color: #777;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+        
+        /* 错误提示 */
+        .error-message {
+            color: #ff4d4d;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            display: block;
+            border-left: 3px solid #ff4d4d;
+            padding-left: 0.8rem;
+        }
+        
+        /* 选项开关 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(100, 100, 100, 0.3);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #fff;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--neon-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* 按钮样式 */
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background: var(--neon-color-alt);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 255, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(100, 100, 100, 0.3);
+            color: #ddd;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(100, 100, 100, 0.5);
+            border-color: rgba(0, 255, 255, 0.4);
+        }
+        
+        .btn-danger {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        
+        .btn-danger:hover {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: #f44336;
+        }
+        
+        /* 统计信息 */
+        .stats-section {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        
+        .stats-title {
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--neon-color);
+            margin-bottom: 0.3rem;
+        }
+        
+        .stat-label {
+            color: #777;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .category-editor-container {
+                max-width: 100%;
+            }
+            
+            .editor-content {
+                padding: 1.5rem 1rem;
+            }
+            
+            .button-group {
+                flex-direction: column;
+                gap: 0.8rem;
+            }
+            
+            .btn {
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <a href="{{ url_for('admin.dashboard') }}">仪表盘</a>
+    <span class="admin-breadcrumbs-separator">/</span>
+    <a href="{{ url_for('admin.categories') }}">分类管理</a>
+    <span class="admin-breadcrumbs-separator">/</span>
+    <span>{% if category %}编辑分类{% else %}创建新分类{% endif %}</span>
+{% endblock %}
+
+{% block content_body %}
+    <div class="category-editor-container">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1>{% if category %}编辑分类{% else %}创建新分类{% endif %}</h1>
+            <p>添加或修改博客文章的分类信息</p>
+        </div>
+        
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <div class="editor-content">
+                <!-- 分类名称 -->
+                <div class="form-group">
+                    {{ form.name.label(class="form-label") }}
+                    {{ form.name(class="form-input", placeholder="输入分类名称...") }}
+                    {% for error in form.name.errors %}
+                        <span class="error-message">{{ error }}</span>
+                    {% endfor %}
+                    <p class="field-description">分类的名称将显示在网站前端和管理界面</p>
+                </div>
+                
+                <!-- 永久链接 (Slug) -->
+                <div class="form-group">
+                    {{ form.slug.label(class="form-label") }}
+                    <div style="position: relative;">
+                        <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #777;">{{ url_for('blog.category', slug='', _external=True) }}</span>
+                        {{ form.slug(class="form-input", style="padding-left: " + url_for('blog.category', slug='', _external=True)|length|string + "ch;", placeholder="输入永久链接...") }}
+                    </div>
+                    {% for error in form.slug.errors %}
+                        <span class="error-message">{{ error }}</span>
+                    {% endfor %}
+                    <p class="field-description">永久链接用于生成分类页面的URL，只能包含字母、数字、连字符和下划线</p>
+                </div>
+                
+                <!-- 描述 -->
+                <div class="form-group">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-textarea", placeholder="输入分类描述...") }}
+                    {% for error in form.description.errors %}
+                        <span class="error-message">{{ error }}</span>
+                    {% endfor %}
+                    <p class="field-description">分类描述将显示在分类页面的顶部，帮助访问者了解分类内容</p>
+                </div>
+                
+                <!-- 父分类 -->
+                <div class="form-group">
+                    {{ form.parent_id.label(class="form-label") }}
+                    {{ form.parent_id(class="form-select") }}
+                    {% for error in form.parent_id.errors %}
+                        <span class="error-message">{{ error }}</span>
+                    {% endfor %}
+                    <p class="field-description">选择父分类可以创建分类层级结构（可选）</p>
+                </div>
+                
+                <!-- 状态 -->
+                <div class="form-group">
+                    {{ form.status.label(class="form-label") }}
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <select name="status" class="form-select" style="max-width: 200px;">
+                            <option value="active" {% if category and category.status == 'active' %}selected{% endif %}>活跃</option>
+                            <option value="inactive" {% if category and category.status == 'inactive' %}selected{% endif %}>不活跃</option>
+                        </select>
+                        <span style="color: #777;">活跃分类将显示在网站前端，不活跃分类仅在管理后台可见</span>
+                    </div>
+                </div>
+                
+                <!-- 排序 -->
+                <div class="form-group">
+                    {{ form.order.label(class="form-label") }}
+                    {{ form.order(class="form-input", type="number", min="0", placeholder="输入排序序号...") }}
+                    {% for error in form.order.errors %}
+                        <span class="error-message">{{ error }}</span>
+                    {% endfor %}
+                    <p class="field-description">排序序号用于确定分类在列表中的显示顺序，数字越小越靠前</p>
+                </div>
+                
+                <!-- 高级选项 -->
+                {% if category %}
+                    <div class="preview-section">
+                        <h3 class="preview-title">高级选项</h3>
+                        
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #ddd; font-weight: 500;">作为导航项显示</span>
+                                <label class="switch">
+                                    <input type="checkbox" name="show_in_nav" {% if category.show_in_nav %}checked{% endif %}>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <p class="field-description">启用后，此分类将显示在网站顶部导航栏</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #ddd; font-weight: 500;">允许评论</span>
+                                <label class="switch">
+                                    <input type="checkbox" name="allow_comments" {% if category.allow_comments %}checked{% endif %}>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <p class="field-description">控制此分类下的文章是否允许评论</p>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <!-- 预览区域 -->
+                <div class="preview-section">
+                    <h3 class="preview-title">预览</h3>
+                    <div class="category-preview">
+                        <div class="category-preview-icon">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                        <div class="category-preview-info">
+                            <div class="category-preview-name" id="preview-name">{% if category %}{{ category.name }}{% else %}分类名称{% endif %}</div>
+                            <div class="category-preview-slug" id="preview-slug">
+                                {{ url_for('blog.category', slug=category.slug if category else 'category-slug', _external=False) }}
+                            </div>
+                            <div class="category-preview-description" id="preview-description">
+                                {% if category %}{{ category.description }}{% else %}分类描述将显示在这里...{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 统计信息 (仅编辑时显示) -->
+                {% if category %}
+                    <div class="stats-section">
+                        <h3 class="stats-title">分类统计</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value">{{ category.post_count or 0 }}</div>
+                                <div class="stat-label">文章数量</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">{{ category.view_count or 0 }}</div>
+                                <div class="stat-label">总浏览量</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">{{ category.created_at.strftime('%Y-%m-%d') }}</div>
+                                <div class="stat-label">创建时间</div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="button-group">
+                <a href="{{ url_for('admin.categories') }}" class="btn btn-secondary">取消</a>
+                {% if category %}
+                    <button type="button" class="btn btn-danger delete-category">删除分类</button>
+                {% endif %}
+                <button type="submit" class="btn btn-primary">
+                    {% if category %}
+                        <i class="fas fa-save"></i> 更新分类
+                    {% else %}
+                        <i class="fas fa-plus"></i> 创建分类
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取表单元素
+            const nameInput = document.querySelector('input[name="name"]');
+            const slugInput = document.querySelector('input[name="slug"]');
+            const descriptionInput = document.querySelector('textarea[name="description"]');
+            
+            // 获取预览元素
+            const previewName = document.getElementById('preview-name');
+            const previewSlug = document.getElementById('preview-slug');
+            const previewDescription = document.getElementById('preview-description');
+            
+            // 自动生成slug
+            nameInput.addEventListener('input', function() {
+                // 只有当slug为空时自动生成
+                if (!slugInput.value.trim()) {
+                    // 简单的slug生成逻辑
+                    const slug = this.value.toLowerCase()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                    
+                    slugInput.value = slug;
+                    updateSlugPreview(slug);
+                }
+                
+                // 更新名称预览
+                previewName.textContent = this.value.trim() || '分类名称';
+            });
+            
+            // 手动修改slug时更新预览
+            slugInput.addEventListener('input', function() {
+                updateSlugPreview(this.value.trim());
+            });
+            
+            // 更新描述预览
+            descriptionInput.addEventListener('input', function() {
+                previewDescription.textContent = this.value.trim() || '分类描述将显示在这里...';
+            });
+            
+            // 更新slug预览
+            function updateSlugPreview(slug) {
+                const baseUrl = '{{ url_for('blog.category', slug='', _external=False) }}';
+                const previewUrl = baseUrl + (slug || 'category-slug');
+                previewSlug.textContent = previewUrl;
+            }
+            
+            // 删除分类确认
+            const deleteCategoryBtn = document.querySelector('.delete-category');
+            if (deleteCategoryBtn) {
+                deleteCategoryBtn.addEventListener('click', function() {
+                    const categoryName = document.querySelector('input[name="name"]').value;
+                    
+                    if (confirm(`确定要删除分类 "${categoryName}" 吗？\n\n此操作不可撤销，可能会影响相关文章。\n如果分类下有文章，建议先将文章移动到其他分类。`)) {
+                        console.log('删除分类:', {{ category.id if category else 'null' }});
+                        // 在实际应用中，应该发送删除请求
+                        // 这里仅作为演示
+                        // window.location.href = `{{ url_for('admin.delete_category', id=0) }}`.replace('0', '{{ category.id }}');
+                    }
+                });
+            }
+            
+            // 表单提交前的验证
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                // 简单的客户端验证
+                const name = nameInput.value.trim();
+                const slug = slugInput.value.trim();
+                
+                if (!name) {
+                    e.preventDefault();
+                    alert('请输入分类名称');
+                    nameInput.focus();
+                    return;
+                }
+                
+                if (!slug) {
+                    e.preventDefault();
+                    alert('请输入永久链接');
+                    slugInput.focus();
+                    return;
+                }
+                
+                // 检查slug格式
+                const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+                if (!slugPattern.test(slug)) {
+                    e.preventDefault();
+                    alert('永久链接只能包含小写字母、数字和连字符');
+                    slugInput.focus();
+                    return;
+                }
+            });
+            
+            // 初始化预览
+            updateSlugPreview(slugInput.value.trim());
+        });
+    </script>
+{% endblock %}

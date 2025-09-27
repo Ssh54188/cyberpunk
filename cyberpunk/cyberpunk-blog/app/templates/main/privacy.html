@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}隐私政策 - {{ site_title or '赛博朋克博客' }}{% endblock %}
+
+{% block css %}
+    <style>
+        .privacy-container {
+            background: var(--dark-surface);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .privacy-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .privacy-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--neon-color);
+        }
+        
+        .privacy-content {
+            line-height: 1.8;
+            color: #ddd;
+        }
+        
+        .privacy-content h2 {
+            font-size: 1.5rem;
+            margin: 2rem 0 1rem;
+            color: var(--neon-color);
+        }
+        
+        .privacy-content h3 {
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.8rem;
+            color: #fff;
+        }
+        
+        .privacy-content p {
+            margin-bottom: 1.2rem;
+        }
+        
+        .privacy-content ul,
+        .privacy-content ol {
+            margin: 1rem 0 1.2rem 2rem;
+        }
+        
+        .privacy-content li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .privacy-content a {
+            color: var(--neon-color);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .privacy-content a:hover {
+            text-decoration: underline;
+        }
+        
+        .privacy-last-updated {
+            margin-top: 2rem;
+            text-align: right;
+            color: #777;
+            font-size: 0.9rem;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="privacy-container">
+        <div class="privacy-header">
+            <h1 class="privacy-title neon-text">隐私政策</h1>
+        </div>
+        
+        <div class="privacy-content">
+            <p>本隐私政策描述了赛博朋克博客（以下简称"我们"）如何收集、使用、存储和共享您的个人信息。请仔细阅读本政策，了解我们的数据处理实践。</p>
+            
+            <h2>1. 信息收集</h2>
+            <p>我们可能会收集以下类型的信息：</p>
+            <ul>
+                <li><strong>个人身份信息</strong>：当您注册账户、发表评论或联系我们时，我们可能收集您的姓名、电子邮件地址、用户名等。</li>
+                <li><strong>使用数据</strong>：我们自动收集有关您如何使用我们网站的信息，包括IP地址、浏览器类型、访问时间、页面访问等。</li>
+                <li><strong>Cookie</strong>：我们使用Cookie来增强用户体验、个性化内容和分析网站流量。</li>
+            </ul>
+            
+            <h2>2. 信息使用</h2>
+            <p>我们使用收集的信息来：</p>
+            <ul>
+                <li>提供、维护和改进我们的服务</li>
+                <li>处理您的注册、评论和其他用户请求</li>
+                <li>发送您可能感兴趣的更新和通知</li>
+                <li>分析用户行为，优化网站功能</li>
+                <li>保护我们网站和用户的安全</li>
+            </ul>
+            
+            <h2>3. 信息共享</h2>
+            <p>我们不会出售您的个人信息。我们可能会在以下情况下共享您的信息：</p>
+            <ul>
+                <li>获得您的明确同意</li>
+                <li>遵守法律法规或法律程序</li>
+                <li>保护赛博朋克博客、我们的用户或公众的权利、财产或安全</li>
+                <li>与我们的服务提供商共享，这些提供商必须按照我们的指示处理信息并保持保密</li>
+            </ul>
+            
+            <h2>4. 数据安全</h2>
+            <p>我们采取合理的安全措施来保护您的个人信息免受未经授权的访问、使用或披露。然而，请注意，互联网传输永远不是100%安全的。</p>
+            
+            <h2>5. Cookie政策</h2>
+            <p>我们使用Cookie来存储用户偏好、改善网站体验和分析网站流量。您可以通过浏览器设置拒绝Cookie，但这可能会影响网站某些功能的使用。</p>
+            
+            <h2>6. 您的权利</h2>
+            <p>您有权访问、更正或删除您的个人信息。您也可以随时联系我们，了解我们如何处理您的数据。</p>
+            
+            <h2>7. 政策更新</h2>
+            <p>我们可能会不时更新本隐私政策。当我们进行重大更改时，我们将在网站上发布更新后的政策，并在适当情况下通知您。</p>
+            
+            <h2>8. 联系我们</h2>
+            <p>如果您对本隐私政策有任何问题或疑虑，请通过<a href="{{ url_for('main.contact') }}">联系页面</a>与我们联系。</p>
+            
+            <div class="privacy-last-updated">
+                最后更新日期：{{ current_year or 2023 }}年{{ current_month or 1 }}月{{ current_day or 1 }}日
+            </div>
+        </div>
+    </div>
+{% endblock %}

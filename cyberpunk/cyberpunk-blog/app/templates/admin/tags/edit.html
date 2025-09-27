@@ -1,0 +1,584 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if tag %}编辑标签{% else %}新增标签{% endif %} - {{ site_title or '赛博朋克博客' }}{% endblock %}
+
+{% block css %}
+    <style>
+        /* 标签编辑页面样式 */
+        .tag-edit-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .page-title {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .page-description {
+            margin: 0.5rem 0 0 0;
+            color: #777;
+        }
+        
+        /* 表单样式 */
+        .form-container {
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ddd;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+            background: rgba(10, 10, 15, 0.9);
+        }
+        
+        .form-input::placeholder {
+            color: #777;
+        }
+        
+        /* 提示信息 */
+        .form-hint {
+            font-size: 0.85rem;
+            color: #777;
+            margin-top: 0.3rem;
+            display: block;
+        }
+        
+        /* 标签预览 */
+        .tag-preview {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(10, 10, 15, 0.7);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .tag-preview-title {
+            font-size: 0.9rem;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+        
+        .preview-badge {
+            display: inline-block;
+            padding: 0.6rem 1.2rem;
+            background: rgba(247, 6, 207, 0.1);
+            border: 1px solid rgba(247, 6, 207, 0.3);
+            border-radius: 25px;
+            color: #f706cf;
+            font-size: 1.1rem;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(247, 6, 207, 0.2);
+        }
+        
+        /* 表单操作按钮 */
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .btn {
+            padding: 0.9rem 1.8rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background: var(--neon-color-alt);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 255, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(100, 100, 100, 0.3);
+            color: #ddd;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(100, 100, 100, 0.5);
+            border-color: rgba(0, 255, 255, 0.4);
+        }
+        
+        .btn-danger {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        
+        .btn-danger:hover {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: #f44336;
+        }
+        
+        /* 错误提示 */
+        .error-message {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            border-radius: 4px;
+            color: #f44336;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+        }
+        
+        .error-message i {
+            margin-top: 0.1rem;
+            font-size: 1.2rem;
+        }
+        
+        /* 成功提示 */
+        .success-message {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            border-radius: 4px;
+            color: #4caf50;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+        }
+        
+        .success-message i {
+            margin-top: 0.1rem;
+            font-size: 1.2rem;
+        }
+        
+        /* 统计信息 */
+        .stats-container {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(10, 10, 15, 0.7);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .stats-title {
+            font-size: 0.9rem;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--neon-color);
+            margin-bottom: 0.3rem;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 安全设置区域 */
+        .security-settings {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(10, 10, 15, 0.7);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .security-title {
+            font-size: 1rem;
+            color: #ddd;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .security-option {
+            margin-bottom: 1rem;
+        }
+        
+        /* 开关按钮 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(100, 100, 100, 0.3);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--neon-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* 开关标签 */
+        .switch-label {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: #ddd;
+            font-weight: 500;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 1.5rem;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <a href="{{ url_for('admin.dashboard') }}">仪表盘</a>
+    <span class="admin-breadcrumbs-separator">/</span>
+    <a href="{{ url_for('admin.tags') }}">标签管理</a>
+    <span class="admin-breadcrumbs-separator">/</span>
+    <span>{% if tag %}编辑标签{% else %}新增标签{% endif %}</span>
+{% endblock %}
+
+{% block content_body %}
+    <div class="tag-edit-container">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1 class="page-title">
+                {% if tag %}
+                    <i class="fas fa-edit"></i> 编辑标签
+                {% else %}
+                    <i class="fas fa-plus"></i> 新增标签
+                {% endif %}
+            </h1>
+            <p class="page-description">
+                {% if tag %}
+                    修改标签信息，更新标签名称和URL别名。
+                {% else %}
+                    创建新标签，用于分类和组织博客文章内容。
+                {% endif %}
+            </p>
+        </div>
+        
+        <!-- 错误提示 -->
+        {% if error %}
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong>错误:</strong> {{ error }}
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- 成功提示 -->
+        {% if success %}
+            <div class="success-message">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <strong>成功:</strong> {{ success }}
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- 表单容器 -->
+        <div class="form-container">
+            <form method="post" action="{% if tag %}{{ url_for('admin.edit_tag', id=tag.id) }}{% else %}{{ url_for('admin.add_tag') }}{% endif %}">
+                <!-- 标签名称 -->
+                <div class="form-group">
+                    <label for="name" class="form-label">
+                        标签名称 <span style="color: #f44336;">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        name="name" 
+                        class="form-input" 
+                        placeholder="输入标签名称" 
+                        value="{{ tag.name if tag else '' }}" 
+                        required
+                    >
+                    <span class="form-hint">标签名称将显示在文章和分类页面中，最多50个字符。</span>
+                </div>
+                
+                <!-- 标签别名 (Slug) -->
+                <div class="form-group">
+                    <label for="slug" class="form-label">
+                        URL别名
+                    </label>
+                    <input 
+                        type="text" 
+                        id="slug" 
+                        name="slug" 
+                        class="form-input" 
+                        placeholder="自动生成，用于URL显示" 
+                        value="{{ tag.slug if tag else '' }}"
+                    >
+                    <span class="form-hint">URL别名用于构建友好的URL地址，如果留空将自动从标签名称生成。只允许字母、数字、连字符和下划线。</span>
+                </div>
+                
+                <!-- 标签预览 -->
+                <div class="tag-preview">
+                    <div class="tag-preview-title">标签预览</div>
+                    <div class="preview-badge" id="tag-preview">
+                        {{ tag.name if tag else '新标签' }}
+                    </div>
+                </div>
+                
+                <!-- 安全设置 -->
+                {% if tag %}
+                    <div class="security-settings">
+                        <h3 class="security-title">
+                            <i class="fas fa-shield-alt"></i> 安全与管理
+                        </h3>
+                        <div class="security-option">
+                            <label class="switch-label">
+                                <input type="checkbox" name="is_protected" {% if tag.is_protected %}checked{% endif %}>
+                                <span class="form-label" style="margin: 0;">保护标签</span>
+                            </label>
+                            <span class="form-hint">选中后将防止标签被意外删除，除非取消此保护。</span>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <!-- 表单操作按钮 -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        {% if tag %}
+                            <i class="fas fa-save"></i> 保存更改
+                        {% else %}
+                            <i class="fas fa-plus"></i> 创建标签
+                        {% endif %}
+                    </button>
+                    <a href="{{ url_for('admin.tags') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 取消
+                    </a>
+                    {% if tag %}
+                        <button type="button" class="btn btn-danger" id="delete-tag-btn">
+                            <i class="fas fa-trash-alt"></i> 删除标签
+                        </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+        
+        <!-- 标签统计信息 -->
+        {% if tag %}
+            <div class="stats-container">
+                <div class="stats-title">标签统计</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ tag.post_count }}</div>
+                        <div class="stat-label">相关文章</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ tag.created_at.strftime('%Y-%m-%d') }}</div>
+                        <div class="stat-label">创建时间</div>
+                    </div>
+                    {% if tag.updated_at and tag.updated_at != tag.created_at %}
+                        <div class="stat-item">
+                            <div class="stat-value">{{ tag.updated_at.strftime('%Y-%m-%d') }}</div>
+                            <div class="stat-label">最近更新</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 标签名称实时预览
+            const nameInput = document.getElementById('name');
+            const tagPreview = document.getElementById('tag-preview');
+            const slugInput = document.getElementById('slug');
+            
+            if (nameInput && tagPreview) {
+                nameInput.addEventListener('input', function() {
+                    const tagName = this.value.trim();
+                    tagPreview.textContent = tagName || '新标签';
+                    
+                    // 自动生成slug
+                    if (!slugInput.value.trim() && tagName) {
+                        slugInput.value = generateSlug(tagName);
+                    }
+                });
+            }
+            
+            // 生成URL友好的slug
+            function generateSlug(text) {
+                return text
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\s-]/g, '') // 移除非字母、数字、空格和连字符的字符
+                    .replace(/\s+/g, '-') // 将空格替换为连字符
+                    .replace(/-+/g, '-') // 合并连续的连字符
+                    .trim('-'); // 移除前后的连字符
+            }
+            
+            // 删除标签确认
+            const deleteBtn = document.getElementById('delete-tag-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function() {
+                    const tagName = "{{ tag.name }}";
+                    const isProtected = {{ 'true' if tag.is_protected else 'false' }};
+                    
+                    let confirmMessage = `确定要删除标签 "${tagName}" 吗？`;
+                    
+                    if (isProtected) {
+                        confirmMessage += "\n\n此标签已被保护，请先取消保护再删除。";
+                        alert(confirmMessage);
+                        return;
+                    }
+                    
+                    const postCount = {{ tag.post_count }};
+                    if (postCount > 0) {
+                        confirmMessage += "\n\n警告：此标签关联了 " + postCount + " 篇文章，删除后这些文章将不再关联此标签。";
+                    }
+                    
+                    confirmMessage += "\n\n此操作不可撤销！";
+                    
+                    if (confirm(confirmMessage)) {
+                        window.location.href = "{{ url_for('admin.delete_tag', id=tag.id) }}";
+                    }
+                });
+            }
+            
+            // 表单验证
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const nameInput = document.getElementById('name');
+                    const nameValue = nameInput.value.trim();
+                    
+                    if (!nameValue) {
+                        alert('请输入标签名称');
+                        nameInput.focus();
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    if (nameValue.length > 50) {
+                        alert('标签名称不能超过50个字符');
+                        nameInput.focus();
+                        e.preventDefault();
+                        return;
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}

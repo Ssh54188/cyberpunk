@@ -1,0 +1,578 @@
+{% extends "base.html" %}
+
+{% block title %}归档 - {{ site_title or '赛博朋克博客' }}{% endblock %}
+
+{% block css %}
+    <style>
+        .archive-container {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 2rem;
+        }
+        
+        .archive-header {
+            background: var(--dark-surface);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            text-align: center;
+        }
+        
+        .archive-icon {
+            font-size: 3rem;
+            color: var(--neon-color);
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
+        }
+        
+        .archive-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .archive-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background: var(--neon-color);
+        }
+        
+        .archive-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #777;
+        }
+        
+        .stat-value {
+            color: var(--neon-color);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        /* 年份导航 */
+        .year-navigation {
+            background: var(--dark-surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .year-navigation h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+        
+        .year-navigation h3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 2px;
+            background: var(--neon-color);
+        }
+        
+        .year-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .year-link {
+            padding: 0.6rem 1.2rem;
+            background: rgba(0, 255, 255, 0.1);
+            color: #ddd;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .year-link:hover {
+            background: rgba(0, 255, 255, 0.2);
+            color: var(--neon-color);
+            border-color: var(--neon-color);
+        }
+        
+        .year-link.active {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            border-color: var(--neon-color);
+        }
+        
+        /* 归档列表 */
+        .archive-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .archive-year {
+            background: var(--dark-surface);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .archive-year-header {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .archive-year-title {
+            font-size: 1.8rem;
+            color: var(--neon-color);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .archive-year-count {
+            background: rgba(0, 255, 255, 0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            color: #ddd;
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+        
+        .archive-month {
+            margin-bottom: 1.5rem;
+        }
+        
+        .archive-month:last-child {
+            margin-bottom: 0;
+        }
+        
+        .archive-month-header {
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px dashed rgba(0, 255, 255, 0.1);
+        }
+        
+        .archive-month-title {
+            font-size: 1.3rem;
+            color: #ddd;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        
+        .archive-month-count {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            color: #777;
+            font-size: 0.8rem;
+            font-weight: normal;
+        }
+        
+        .archive-posts {
+            list-style: none;
+            padding-left: 1.5rem;
+        }
+        
+        .archive-post-item {
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px dotted rgba(0, 255, 255, 0.05);
+            position: relative;
+        }
+        
+        .archive-post-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .archive-post-item::before {
+            content: '';
+            position: absolute;
+            left: -25px;
+            top: 0.7rem;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--neon-color);
+        }
+        
+        .archive-post-link {
+            color: #ddd;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .archive-post-link:hover {
+            color: var(--neon-color);
+        }
+        
+        .archive-post-date {
+            color: #777;
+            font-size: 0.9rem;
+            margin-left: 1rem;
+        }
+        
+        /* 侧边栏 */
+        .blog-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .sidebar-widget {
+            background: var(--dark-surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .sidebar-widget h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+        
+        .sidebar-widget h3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 2px;
+            background: var(--neon-color);
+        }
+        
+        /* 分类列表 */
+        .category-list {
+            list-style: none;
+        }
+        
+        .category-list-item {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .category-list-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .category-list-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #ddd;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .category-list-link:hover {
+            color: var(--neon-color);
+        }
+        
+        .category-list-count {
+            background: rgba(0, 255, 255, 0.2);
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            color: var(--neon-color);
+            font-size: 0.8rem;
+        }
+        
+        /* 标签云 */
+        .tags-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+        
+        .tag-cloud-item {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            color: #ddd;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .tag-cloud-item:hover {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            transform: translateY(-3px);
+            border-color: var(--neon-color);
+        }
+        
+        /* 分页导航 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 3rem;
+            gap: 0.5rem;
+        }
+        
+        .page-link {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--dark-bg);
+            color: #ddd;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .page-link:hover {
+            background: rgba(0, 255, 255, 0.2);
+            color: var(--neon-color);
+            border-color: var(--neon-color);
+        }
+        
+        .page-link.active {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            border-color: var(--neon-color);
+        }
+        
+        .page-link.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 992px) {
+            .archive-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- 归档头部 -->
+    <div class="archive-header">
+        <div class="archive-icon">
+            <i class="fas fa-archive"></i>
+        </div>
+        <h1 class="archive-title neon-text">博客归档</h1>
+        <div class="archive-stats">
+            <div class="stat-item">
+                <i class="fas fa-file-alt"></i>
+                <span>共 <span class="stat-value">{{ total_posts }}</span> 篇文章</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>跨越 <span class="stat-value">{{ archive_years|length }}</span> 年</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 年份导航 -->
+    <div class="year-navigation">
+        <h3>按年份浏览</h3>
+        <div class="year-links">
+            {% for year in archive_years %}
+                <a href="{{ url_for('blog.archive', year=year) }}" class="year-link {% if current_year == year %}active{% endif %}">
+                    {{ year }}年
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- 主内容区域 -->
+    <div class="archive-container">
+        <!-- 归档列表 -->
+        <div class="archive-list">
+            {% if archive_data %}
+                {% for year, months in archive_data.items() %}
+                    <div class="archive-year">
+                        <div class="archive-year-header">
+                            <h2 class="archive-year-title">
+                                {{ year }}年
+                                <span class="archive-year-count">{{ months|sum(attribute='count') }} 篇</span>
+                            </h2>
+                        </div>
+                        {% for month in months %}
+                            <div class="archive-month">
+                                <div class="archive-month-header">
+                                    <h3 class="archive-month-title">
+                                        {{ month.name }}
+                                        <span class="archive-month-count">{{ month.count }} 篇</span>
+                                    </h3>
+                                </div>
+                                <ul class="archive-posts">
+                                    {% for post in month.posts %}
+                                        <li class="archive-post-item">
+                                            <a href="{{ url_for('blog.blog_post', slug=post.slug) }}" class="archive-post-link">
+                                                <span>{{ post.title }}</span>
+                                                <span class="archive-post-date">{{ post.created_at.strftime('%m-%d') }}</span>
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-posts">
+                    <p>暂无归档文章</p>
+                </div>
+            {% endif %}
+            
+            <!-- 分页导航 -->
+            {% if pagination and pagination.pages > 1 %}
+                <nav class="pagination">
+                    {% if pagination.has_prev %}
+                        <a href="{{ url_for('blog.archive', page=pagination.prev_num, year=current_year) }}" class="page-link"><i class="fas fa-chevron-left"></i></a>
+                    {% else %}
+                        <span class="page-link disabled"><i class="fas fa-chevron-left"></i></span>
+                    {% endif %}
+                    
+                    {% for page_num in pagination.iter_pages() %}
+                        {% if page_num %}
+                            {% if pagination.page == page_num %}
+                                <span class="page-link active">{{ page_num }}</span>
+                            {% else %}
+                                <a href="{{ url_for('blog.archive', page=page_num, year=current_year) }}" class="page-link">{{ page_num }}</a>
+                            {% endif %}
+                        {% else %}
+                            <span class="page-link">...</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                        <a href="{{ url_for('blog.archive', page=pagination.next_num, year=current_year) }}" class="page-link"><i class="fas fa-chevron-right"></i></a>
+                    {% else %}
+                        <span class="page-link disabled"><i class="fas fa-chevron-right"></i></span>
+                    {% endif %}
+                </nav>
+            {% endif %}
+        </div>
+        
+        <!-- 侧边栏 -->
+        <div class="blog-sidebar">
+            <!-- 热门分类 -->
+            <div class="sidebar-widget">
+                <h3>热门分类</h3>
+                <ul class="category-list">
+                    {% for category in popular_categories %}
+                        <li class="category-list-item">
+                            <a href="{{ url_for('blog.category', slug=category.slug) }}" class="category-list-link">
+                                <span>{{ category.name }}</span>
+                                <span class="category-list-count">{{ category.post_count }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- 热门标签 -->
+            <div class="sidebar-widget">
+                <h3>热门标签</h3>
+                <div class="tags-cloud">
+                    {% for tag in popular_tags %}
+                        <a href="{{ url_for('blog.tag', slug=tag.slug) }}" class="tag-cloud-item">
+                            {{ tag.name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- 最近文章 -->
+            <div class="sidebar-widget">
+                <h3>最近文章</h3>
+                <ul class="recent-posts">
+                    {% for recent_post in recent_posts %}
+                        <li class="related-post-item">
+                            <a href="{{ url_for('blog.blog_post', slug=recent_post.slug) }}" class="related-post-link">
+                                <h4 class="related-post-title">{{ recent_post.title }}</h4>
+                                <div class="related-post-date">{{ recent_post.created_at.strftime('%Y-%m-%d') }}</div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 为年份链接添加动画效果
+            const yearLinks = document.querySelectorAll('.year-link');
+            yearLinks.forEach(link => {
+                link.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-3px) scale(1.05)';
+                });
+                
+                link.addEventListener('mouseleave', function() {
+                    if (!this.classList.contains('active')) {
+                        this.style.transform = 'translateY(0) scale(1)';
+                    }
+                });
+            });
+            
+            // 为归档文章项添加动画效果
+            const archivePostItems = document.querySelectorAll('.archive-post-item');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateX(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            archivePostItems.forEach((item, index) => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateX(-20px)';
+                item.style.transition = `opacity 0.5s ease, transform 0.5s ease ${index * 0.05}s`;
+                observer.observe(item);
+            });
+            
+            // 为标签云添加动画效果
+            const tagCloudItems = document.querySelectorAll('.tag-cloud-item');
+            tagCloudItems.forEach(tag => {
+                tag.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-3px) scale(1.05)';
+                });
+                
+                tag.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+{% endblock %}

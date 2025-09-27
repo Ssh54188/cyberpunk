@@ -1,0 +1,711 @@
+{% extends "admin/base.html" %}
+
+{% block title %}标签管理 - {{ site_title or '赛博朋克博客' }}{% endblock %}
+
+{% block css %}
+    <style>
+        /* 标签管理页面样式 */
+        .tags-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-title {
+            margin: 0;
+        }
+        
+        .page-description {
+            margin: 0.5rem 0 0 0;
+            color: #777;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background: var(--neon-color-alt);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 255, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(100, 100, 100, 0.3);
+            color: #ddd;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(100, 100, 100, 0.5);
+            border-color: rgba(0, 255, 255, 0.4);
+        }
+        
+        .btn-danger {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        
+        .btn-danger:hover {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: #f44336;
+        }
+        
+        /* 过滤和搜索区域 */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 0.8rem 1.2rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+            background: rgba(10, 10, 15, 0.9);
+        }
+        
+        .search-input::placeholder {
+            color: #777;
+        }
+        
+        /* 标签表格 */
+        .tags-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tags-table thead {
+            background: rgba(10, 10, 15, 0.9);
+            border-bottom: 2px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .tags-table th {
+            padding: 1.2rem 1.5rem;
+            text-align: left;
+            color: #ddd;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .tags-table td {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+            color: #ddd;
+        }
+        
+        .tags-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .tags-table tr:hover {
+            background: rgba(0, 255, 255, 0.05);
+        }
+        
+        /* 标签名称 */
+        .tag-name {
+            font-weight: 500;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        
+        .tag-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: rgba(247, 6, 207, 0.1);
+            border: 1px solid rgba(247, 6, 207, 0.3);
+            border-radius: 20px;
+            color: #f706cf;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        /* 文章数量 */
+        .post-count {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: rgba(0, 255, 255, 0.1);
+            border-radius: 20px;
+            color: var(--neon-color);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        /* 操作按钮组 */
+        .action-links {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .action-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: rgba(15, 15, 20, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            color: #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .action-link:hover {
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-color);
+            border-color: var(--neon-color);
+        }
+        
+        .action-link.delete:hover {
+            color: #f44336;
+            border-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+        
+        /* 分页导航 */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .pagination-info {
+            color: #777;
+            font-size: 0.9rem;
+        }
+        
+        .pagination-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .pagination-link {
+            padding: 0.6rem 1rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            color: #ddd;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .pagination-link:hover:not(.disabled) {
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-color);
+            border-color: var(--neon-color);
+        }
+        
+        .pagination-link.active {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            border-color: var(--neon-color);
+        }
+        
+        .pagination-link.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #777;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+        }
+        
+        .empty-state-title {
+            font-size: 1.5rem;
+            color: #ddd;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state-description {
+            margin-bottom: 2rem;
+        }
+        
+        /* 批量操作 */
+        .batch-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .batch-actions.visible {
+            opacity: 1;
+        }
+        
+        .batch-actions-select {
+            padding: 0.6rem 1rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+        }
+        
+        /* 复选框样式 */
+        .checkbox-custom {
+            display: inline-block;
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .checkbox-custom input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 20px;
+            width: 20px;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-custom:hover input ~ .checkmark {
+            background: rgba(10, 10, 15, 0.9);
+            border-color: var(--neon-color);
+        }
+        
+        .checkbox-custom input:checked ~ .checkmark {
+            background: var(--neon-color);
+            border-color: var(--neon-color);
+        }
+        
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        
+        .checkbox-custom input:checked ~ .checkmark:after {
+            display: block;
+        }
+        
+        .checkbox-custom .checkmark:after {
+            left: 7px;
+            top: 3px;
+            width: 5px;
+            height: 10px;
+            border: solid var(--dark-bg);
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .action-buttons {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            .filter-bar {
+                flex-direction: column;
+            }
+            
+            .search-input {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .tags-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .tags-table th,
+            .tags-table td {
+                padding: 1rem;
+            }
+            
+            .pagination {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .pagination-info {
+                order: 2;
+            }
+            
+            .pagination-controls {
+                order: 1;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <a href="{{ url_for('admin.dashboard') }}">仪表盘</a>
+    <span class="admin-breadcrumbs-separator">/</span>
+    <span>标签管理</span>
+{% endblock %}
+
+{% block content_body %}
+    <div class="tags-container">
+        <!-- 页面标题和操作按钮 -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">标签管理</h1>
+                <p class="page-description">管理博客文章标签，查看标签统计数据和进行批量操作</p>
+            </div>
+            <div class="action-buttons">
+                <a href="{{ url_for('admin.add_tag') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> 新增标签
+                </a>
+            </div>
+        </div>
+        
+        <!-- 批量操作栏 -->
+        <div class="batch-actions" id="batch-actions">
+            <span style="color: #ddd; font-weight: 500;">已选择 <span id="selected-count">0</span> 个标签</span>
+            <select class="batch-actions-select">
+                <option value="">批量操作</option>
+                <option value="delete">删除所选</option>
+            </select>
+            <button class="btn btn-danger" id="apply-batch-action">应用</button>
+            <button class="btn btn-secondary" id="cancel-batch-selection">取消</button>
+        </div>
+        
+        <!-- 过滤和搜索区域 -->
+        <div class="filter-bar">
+            <input type="text" class="search-input" placeholder="搜索标签名称..." id="tag-search">
+            <select class="search-input" style="max-width: 200px;" id="sort-filter">
+                <option value="name_asc">名称 (A-Z)</option>
+                <option value="name_desc">名称 (Z-A)</option>
+                <option value="posts_desc">文章数量 (降序)</option>
+                <option value="posts_asc">文章数量 (升序)</option>
+                <option value="created_desc">创建时间 (最新)</option>
+                <option value="created_asc">创建时间 (最早)</option>
+            </select>
+        </div>
+        
+        <!-- 标签表格 -->
+        {% if tags.items %} 
+            <table class="tags-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">
+                            <label class="checkbox-custom">
+                                <input type="checkbox" id="select-all">
+                                <span class="checkmark"></span>
+                            </label>
+                        </th>
+                        <th>标签名称</th>
+                        <th>文章数量</th>
+                        <th>创建时间</th>
+                        <th style="text-align: right;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tag in tags.items %} 
+                        <tr data-tag-id="{{ tag.id }}">
+                            <td>
+                                <label class="checkbox-custom">
+                                    <input type="checkbox" class="tag-checkbox">
+                                    <span class="checkmark"></span>
+                                </label>
+                            </td>
+                            <td>
+                                <div class="tag-name">
+                                    <i class="fas fa-tag" style="color: #f706cf;"></i>
+                                    <strong>{{ tag.name }}</strong>
+                                    {% if tag.slug %} 
+                                        <span class="tag-badge">/{{ tag.slug }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="post-count">{{ tag.post_count }} 篇文章</span>
+                            </td>
+                            <td>
+                                {{ tag.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="action-links">
+                                    <a href="{{ url_for('admin.edit_tag', id=tag.id) }}" class="action-link" title="编辑">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="action-link delete" data-tag-id="{{ tag.id }}" title="删除">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- 分页导航 -->
+            <div class="pagination">
+                <div class="pagination-info">
+                    显示 {{ tags.page * tags.per_page - tags.per_page + 1 }} 至 {{ tags.page * tags.per_page if tags.page * tags.per_page < tags.total else tags.total }} 条，共 {{ tags.total }} 条记录
+                </div>
+                <div class="pagination-controls">
+                    <a href="{% if tags.has_prev %}{{ url_for('admin.tags', page=tags.prev_num) }}{% else %}#{% endif %}" 
+                        class="pagination-link {% if not tags.has_prev %}disabled{% endif %}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    
+                    {% for page_num in tags.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            <a href="{{ url_for('admin.tags', page=page_num) }}" 
+                                class="pagination-link {% if page_num == tags.page %}active{% endif %}">
+                                {{ page_num }}
+                            </a>
+                        {% else %}
+                            <span class="pagination-link">...</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <a href="{% if tags.has_next %}{{ url_for('admin.tags', page=tags.next_num) }}{% else %}#{% endif %}" 
+                        class="pagination-link {% if not tags.has_next %}disabled{% endif %}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <!-- 空状态 -->
+            <div class="empty-state">
+                <i class="fas fa-tags empty-state-icon"></i>
+                <h3 class="empty-state-title">暂无标签</h3>
+                <p class="empty-state-description">还没有创建任何标签，请点击上方的"新增标签"按钮添加第一个标签。</p>
+                <a href="{{ url_for('admin.add_tag') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> 新增标签
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 搜索功能
+            const searchInput = document.getElementById('tag-search');
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = document.querySelectorAll('.tags-table tbody tr');
+                
+                rows.forEach(row => {
+                    const tagName = row.querySelector('.tag-name strong').textContent.toLowerCase();
+                    const tagSlug = row.querySelector('.tag-badge');
+                    let slugText = '';
+                    
+                    if (tagSlug) {
+                        slugText = tagSlug.textContent.toLowerCase();
+                    }
+                    
+                    if (tagName.includes(searchTerm) || slugText.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+            
+            // 排序功能
+            const sortFilter = document.getElementById('sort-filter');
+            sortFilter.addEventListener('change', function() {
+                const sortOption = this.value;
+                console.log(`排序选项: ${sortOption}`);
+                // 在实际应用中，应该发送请求重新排序数据
+                // 这里仅作为演示
+            });
+            
+            // 全选/取消全选
+            const selectAllCheckbox = document.getElementById('select-all');
+            const tagCheckboxes = document.querySelectorAll('.tag-checkbox');
+            const batchActions = document.getElementById('batch-actions');
+            const selectedCount = document.getElementById('selected-count');
+            
+            selectAllCheckbox.addEventListener('change', function() {
+                const isChecked = this.checked;
+                
+                tagCheckboxes.forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                    const row = checkbox.closest('tr');
+                    if (isChecked) {
+                        row.style.background = 'rgba(0, 255, 255, 0.1)';
+                    } else {
+                        row.style.background = '';
+                    }
+                });
+                
+                updateBatchActions();
+            });
+            
+            tagCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const row = this.closest('tr');
+                    if (this.checked) {
+                        row.style.background = 'rgba(0, 255, 255, 0.1)';
+                    } else {
+                        row.style.background = '';
+                    }
+                    
+                    // 更新全选复选框状态
+                    const allChecked = Array.from(tagCheckboxes).every(cb => cb.checked);
+                    const anyChecked = Array.from(tagCheckboxes).some(cb => cb.checked);
+                    
+                    selectAllCheckbox.checked = allChecked;
+                    selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+                    
+                    updateBatchActions();
+                });
+            });
+            
+            function updateBatchActions() {
+                const checkedCount = document.querySelectorAll('.tag-checkbox:checked').length;
+                selectedCount.textContent = checkedCount;
+                
+                if (checkedCount > 0) {
+                    batchActions.classList.add('visible');
+                } else {
+                    batchActions.classList.remove('visible');
+                }
+            }
+            
+            // 取消批量选择
+            document.getElementById('cancel-batch-selection').addEventListener('click', function() {
+                selectAllCheckbox.checked = false;
+                tagCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    const row = checkbox.closest('tr');
+                    row.style.background = '';
+                });
+                batchActions.classList.remove('visible');
+            });
+            
+            // 应用批量操作
+            document.getElementById('apply-batch-action').addEventListener('click', function() {
+                const action = document.querySelector('.batch-actions-select').value;
+                const checkedTags = document.querySelectorAll('.tag-checkbox:checked');
+                const tagIds = Array.from(checkedTags).map(cb => cb.closest('tr').getAttribute('data-tag-id'));
+                
+                if (!action || tagIds.length === 0) {
+                    alert('请选择操作和标签');
+                    return;
+                }
+                
+                if (action === 'delete') {
+                    if (confirm(`确定要删除选中的 ${tagIds.length} 个标签吗？此操作不可撤销，可能会影响相关文章。`)) {
+                        console.log('删除标签:', tagIds);
+                        // 在实际应用中，应该发送请求删除选中的标签
+                        // 这里仅作为演示
+                    }
+                }
+            });
+            
+            // 单个删除操作
+            document.querySelectorAll('.action-link.delete').forEach(button => {
+                button.addEventListener('click', function() {
+                    const tagId = this.getAttribute('data-tag-id');
+                    const tagName = this.closest('tr').querySelector('.tag-name strong').textContent;
+                    
+                    if (confirm(`确定要删除标签 "${tagName}" 吗？此操作不可撤销，可能会影响相关文章。`)) {
+                        console.log('删除标签:', tagId);
+                        // 在实际应用中，应该发送请求删除标签
+                        // 这里仅作为演示
+                        // window.location.href = `{{ url_for('admin.delete_tag', id=0) }}`.replace('0', tagId);
+                    }
+                });
+            });
+            
+            // 初始化页面
+            updateBatchActions();
+        });
+    </script>
+{% endblock %}

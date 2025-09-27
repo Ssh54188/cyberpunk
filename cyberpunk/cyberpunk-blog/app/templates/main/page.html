@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} - {{ site_title or '赛博朋克博客' }}{% endblock %}
+
+{% block css %}
+    <style>
+        .page-container {
+            background: var(--dark-surface);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--neon-color);
+        }
+        
+        .page-content {
+            line-height: 1.8;
+            color: #ddd;
+        }
+        
+        .page-content h2 {
+            font-size: 1.5rem;
+            margin: 2rem 0 1rem;
+            color: var(--neon-color);
+        }
+        
+        .page-content h3 {
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.8rem;
+            color: #fff;
+        }
+        
+        .page-content p {
+            margin-bottom: 1.2rem;
+        }
+        
+        .page-content ul,
+        .page-content ol {
+            margin: 1rem 0 1.2rem 2rem;
+        }
+        
+        .page-content li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-content a {
+            color: var(--neon-color);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .page-content a:hover {
+            text-decoration: underline;
+        }
+        
+        .page-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #777;
+            font-size: 0.9rem;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0, 255, 255, 0.1);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="page-container">
+        <div class="page-header">
+            <h1 class="page-title neon-text">{{ page.title }}</h1>
+        </div>
+        
+        <div class="page-content">
+            {{ page.content|safe }}
+        </div>
+        
+        <div class="page-meta">
+            <span>最后更新: {{ page.updated_at.strftime('%Y-%m-%d') }}</span>
+            <span>浏览次数: {{ page.views }}</span>
+        </div>
+    </div>
+{% endblock %}

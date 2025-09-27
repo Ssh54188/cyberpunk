@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}搜索结果 - {{ site_title or '赛博朋克博客' }}{% endblock %}
+
+{% block css %}
+    <style>
+        .search-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .search-query {
+            color: var(--neon-color);
+            font-family: 'Roboto Mono', monospace;
+            background: rgba(0, 255, 255, 0.1);
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 1rem 0;
+        }
+        
+        .search-results-count {
+            color: #777;
+            margin-bottom: 2rem;
+        }
+        
+        .search-results {
+            margin-bottom: 2rem;
+        }
+        
+        .search-result-item {
+            background: var(--dark-surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .search-result-item:hover {
+            border-color: var(--neon-color);
+            transform: translateX(5px);
+        }
+        
+        .search-result-title {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .search-result-title a {
+            color: var(--neon-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .search-result-title a:hover {
+            color: var(--neon-color-alt);
+        }
+        
+        .search-result-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #777;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .search-result-excerpt {
+            color: #ddd;
+            line-height: 1.6;
+        }
+        
+        .search-result-excerpt strong {
+            color: var(--neon-color);
+            font-weight: normal;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #777;
+        }
+        
+        .no-results h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #aaa;
+        }
+        
+        .search-suggestions {
+            margin-top: 2rem;
+        }
+        
+        .search-suggestions h3 {
+            margin-bottom: 1rem;
+        }
+        
+        .suggestion-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+        
+        .suggestion-tag {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            color: #ddd;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .suggestion-tag:hover {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            transform: translateY(-2px);
+        }
+        
+        /* 分页样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 3rem;
+        }
+        
+        .pagination ul {
+            display: flex;
+            list-style: none;
+            gap: 0.5rem;
+        }
+        
+        .pagination li a,
+        .pagination li span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--dark-surface);
+            color: #ddd;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .pagination li a:hover {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+        }
+        
+        .pagination li.active span {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+        }
+        
+        .pagination li.disabled a,
+        .pagination li.disabled span {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- 搜索页面标题 -->
+    <div class="search-header">
+        <h1 class="neon-text">搜索结果</h1>
+        <div class="page-divider"></div>
+        <div class="search-query">"{{ query }}"</div>
+        <div class="search-results-count">找到 {{ total_results }} 条结果</div>
+    </div>
+    
+    <!-- 搜索结果列表 -->
+    <div class="search-results">
+        {% if results %}
+            {% for result in results %}
+                <div class="search-result-item">
+                    <h3 class="search-result-title">
+                        <a href="{{ url_for('blog.blog_post', slug=result.slug) if result.type == 'post' else url_for('main.page', slug=result.slug) }}">
+                            {{ result.title }}
+                        </a>
+                    </h3>
+                    <div class="search-result-meta">
+                        <span>{% if result.type == 'post' %}文章{% else %}页面{% endif %}</span>
+                        <span>{{ result.created_at.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                    <div class="search-result-excerpt">
+                        {{ result.excerpt | safe }}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <!-- 无搜索结果 -->
+            <div class="no-results">
+                <i class="fas fa-search fa-5x" style="color: var(--neon-color); margin-bottom: 1.5rem;"></i>
+                <h3>未找到相关内容</h3>
+                <p>尝试使用不同的关键词或查看我们的热门标签</p>
+                
+                <div class="search-suggestions">
+                    <h3>热门标签</h3>
+                    <div class="suggestion-tags">
+                        {% for tag in popular_tags %}
+                            <a href="{{ url_for('blog.tag', slug=tag.slug) }}" class="suggestion-tag">
+                                {{ tag.name }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- 分页导航 -->
+    {% if results and pagination %}  
+        <div class="pagination">
+            <ul>
+                {% if pagination.has_prev %}
+                    <li><a href="{{ url_for('main.search', q=query, page=pagination.prev_num) }}"><i class="fas fa-chevron-left"></i></a></li>
+                {% else %}
+                    <li class="disabled"><span><i class="fas fa-chevron-left"></i></span></li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if pagination.page == page_num %}
+                            <li class="active"><span>{{ page_num }}</span></li>
+                        {% else %}
+                            <li><a href="{{ url_for('main.search', q=query, page=page_num) }}">{{ page_num }}</a></li>
+                        {% endif %}
+                    {% else %}
+                        <li><span>...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                    <li><a href="{{ url_for('main.search', q=query, page=pagination.next_num) }}"><i class="fas fa-chevron-right"></i></a></li>
+                {% else %}
+                    <li class="disabled"><span><i class="fas fa-chevron-right"></i></span></li>
+                {% endif %}
+            </ul>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block js %}
+    <script>
+        // 搜索结果高亮效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchResults = document.querySelectorAll('.search-result-item');
+            
+            searchResults.forEach(result => {
+                result.addEventListener('mouseenter', function() {
+                    this.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.1)';
+                });
+                
+                result.addEventListener('mouseleave', function() {
+                    this.style.boxShadow = 'none';
+                });
+            });
+            
+            // 平滑滚动到搜索框
+            document.querySelector('#search-toggle').addEventListener('click', function() {
+                setTimeout(function() {
+                    document.querySelector('.search-input').focus();
+                }, 300);
+            });
+        });
+    </script>
+{% endblock %}

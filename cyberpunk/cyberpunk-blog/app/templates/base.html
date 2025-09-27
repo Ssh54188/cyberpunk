@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site_title or '赛博朋克博客' }}{% endblock %}</title>
+    <!-- 引入基础CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reset.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cyberpunk.css') }}">
+    <!-- 引入Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入Google字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Roboto+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- 页面特定CSS -->
+    {% block css %}{% endblock %}
+    
+    <!-- 基础JavaScript -->
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    
+    <!-- 页面标题中的赛博朋克效果 -->
+    <style>
+        :root {
+            --neon-color: {{ neon_color or '#0ff' }};
+            --neon-color-alt: {{ neon_color_alt or '#f0f' }};
+            --dark-bg: {{ dark_bg or '#0a0a0f' }};
+            --dark-surface: {{ dark_surface or '#12121e' }};
+        }
+    </style>
+</head>
+<body class="cyberpunk-theme">
+    <!-- 页面加载动画 -->
+    <div id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">系统载入中...</div>
+    </div>
+    
+    <!-- 页面头部 -->
+    <header class="site-header">
+        <div class="container">
+            <div class="header-content">
+                <!-- 网站标志 -->
+                <div class="logo">
+                    <h1 class="glitch-effect">{{ site_title or '赛博朋克博客' }}</h1>
+                </div>
+                
+                <!-- 导航菜单 -->
+                <nav class="main-nav">
+                    <ul>
+                        <li><a href="{{ url_for('main.index') }}" class="nav-link">首页</a></li>
+                        <li><a href="{{ url_for('blog.blog_index') }}" class="nav-link">博客</a></li>
+                        <li><a href="{{ url_for('main.categories') }}" class="nav-link">分类</a></li>
+                        <li><a href="{{ url_for('main.tags') }}" class="nav-link">标签</a></li>
+                        <li><a href="{{ url_for('main.about') }}" class="nav-link">关于</a></li>
+                        <li><a href="{{ url_for('main.contact') }}" class="nav-link">联系</a></li>
+                    </ul>
+                </nav>
+                
+                <!-- 用户操作区 -->
+                <div class="user-actions">
+                    <!-- 搜索按钮 -->
+                    <button class="search-btn" id="search-toggle">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    
+                    <!-- 用户菜单 -->
+                    {% if current_user.is_authenticated %}
+                        <div class="user-menu">
+                            <button class="user-btn">
+                                <img src="{{ current_user.avatar_url or url_for('static', filename='images/avatars/default.png') }}" alt="用户头像" class="avatar-small">
+                            </button>
+                            <div class="user-dropdown">
+                                <a href="{{ url_for('auth.profile') }}">个人资料</a>
+                                {% if current_user.is_admin %}
+                                    <a href="{{ url_for('admin.dashboard') }}">管理后台</a>
+                                {% endif %}
+                                <a href="{{ url_for('auth.logout') }}">退出登录</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="login-btn">登录</a>
+                        <a href="{{ url_for('auth.register') }}" class="register-btn">注册</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- 移动设备菜单按钮 -->
+        <button class="mobile-menu-btn" id="mobile-menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+    
+    <!-- 移动设备菜单 -->
+    <div class="mobile-menu" id="mobile-menu">
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('main.index') }}">首页</a></li>
+                <li><a href="{{ url_for('blog.blog_index') }}">博客</a></li>
+                <li><a href="{{ url_for('main.categories') }}">分类</a></li>
+                <li><a href="{{ url_for('main.tags') }}">标签</a></li>
+                <li><a href="{{ url_for('main.about') }}">关于</a></li>
+                <li><a href="{{ url_for('main.contact') }}">联系</a></li>
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('auth.profile') }}">个人资料</a></li>
+                    {% if current_user.is_admin %}
+                        <li><a href="{{ url_for('admin.dashboard') }}">管理后台</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('auth.logout') }}">退出登录</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('auth.login') }}">登录</a></li>
+                    <li><a href="{{ url_for('auth.register') }}">注册</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    
+    <!-- 搜索框 -->
+    <div class="search-overlay" id="search-overlay">
+        <div class="search-container">
+            <button class="search-close" id="search-close">
+                <i class="fas fa-times"></i>
+            </button>
+            <form action="{{ url_for('main.search') }}" method="get">
+                <input type="text" name="q" placeholder="搜索文章..." class="search-input" autofocus>
+                <button type="submit" class="search-submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 主要内容区域 -->
+    <main class="main-content">
+        <div class="container">
+            <!-- 消息提示区域 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="messages">
+                        {% for category, message in messages %}
+                            <div class="message {{ category }}">
+                                <span>{{ message }}</span>
+                                <button class="message-close"><i class="fas fa-times"></i></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- 页面内容 -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <!-- 页脚 -->
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <h3 class="neon-text">{{ site_title or '赛博朋克博客' }}</h3>
+                    <p class="footer-tagline">{{ site_tagline or '未来已来，只是分布不均。' }}</p>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>快速链接</h4>
+                    <ul>
+                        <li><a href="{{ url_for('main.index') }}">首页</a></li>
+                        <li><a href="{{ url_for('main.about') }}">关于我们</a></li>
+                        <li><a href="{{ url_for('main.contact') }}">联系我们</a></li>
+                        <li><a href="{{ url_for('main.privacy') }}">隐私政策</a></li>
+                        <li><a href="{{ url_for('main.terms') }}">使用条款</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-social">
+                    <h4>关注我们</h4>
+                    <div class="social-icons">
+                        <a href="{{ social_github or '#' }}" target="_blank"><i class="fab fa-github"></i></a>
+                        <a href="{{ social_twitter or '#' }}" target="_blank"><i class="fab fa-twitter"></i></a>
+                        <a href="{{ social_instagram or '#' }}" target="_blank"><i class="fab fa-instagram"></i></a>
+                        <a href="{{ social_linkedin or '#' }}" target="_blank"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; {{ current_year or 2023 }} {{ site_title or '赛博朋克博客' }}. 保留所有权利。</p>
+                <p class="footer-cyber-quote">"{{ cyberpunk_quote or '在信息时代，知识就是力量。' }}"</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- 返回顶部按钮 -->
+    <button class="back-to-top" id="back-to-top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+    
+    <!-- 基础JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cyberpunk.js') }}"></script>
+    
+    <!-- 页面特定JavaScript -->
+    {% block js %}{% endblock %}
+</body>
+</html>

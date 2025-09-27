@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}博客 - {{ site_title or '赛博朋克博客' }}{% endblock %}
+
+{% block css %}
+    <style>
+        .blog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .blog-header h1 {
+            font-size: 2rem;
+            margin: 0;
+        }
+        
+        .blog-filters {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .filter-select {
+            padding: 0.5rem 1rem;
+            background: var(--dark-surface);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #ddd;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+        
+        .blog-container {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 2rem;
+        }
+        
+        /* 文章列表样式 */
+        .posts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .post-item {
+            background: var(--dark-surface);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .post-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 255, 255, 0.1);
+            border-color: var(--neon-color);
+        }
+        
+        .post-header {
+            padding: 1.5rem;
+        }
+        
+        .post-meta-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            color: #777;
+            font-size: 0.9rem;
+        }
+        
+        .post-category {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: rgba(0, 255, 255, 0.2);
+            color: var(--neon-color);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .post-category:hover {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+        }
+        
+        .post-title {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+        
+        .post-title a {
+            color: var(--neon-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .post-title a:hover {
+            color: var(--neon-color-alt);
+        }
+        
+        .post-excerpt {
+            color: #ddd;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+        
+        .post-meta-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #777;
+            font-size: 0.9rem;
+        }
+        
+        .post-author {
+            display: flex;
+            align-items: center;
+        }
+        
+        .author-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        
+        .post-comments {
+            display: flex;
+            align-items: center;
+        }
+        
+        .post-comments i {
+            margin-right: 0.3rem;
+        }
+        
+        .read-more-btn {
+            align-self: flex-start;
+            padding: 0.8rem 1.5rem;
+            background: transparent;
+            color: var(--neon-color);
+            border: 1px solid var(--neon-color);
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+        }
+        
+        .read-more-btn:hover {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+        }
+        
+        /* 侧边栏样式 */
+        .blog-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .sidebar-widget {
+            background: var(--dark-surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .sidebar-widget h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+        
+        .sidebar-widget h3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 2px;
+            background: var(--neon-color);
+        }
+        
+        /* 搜索框 */
+        .sidebar-search {
+            position: relative;
+        }
+        
+        .sidebar-search input {
+            width: 100%;
+            padding: 0.8rem 2.5rem 0.8rem 1rem;
+            background: var(--dark-bg);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-family: inherit;
+        }
+        
+        .sidebar-search input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+        
+        .sidebar-search button {
+            position: absolute;
+            right: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--neon-color);
+            cursor: pointer;
+        }
+        
+        /* 分类列表 */
+        .category-list {
+            list-style: none;
+        }
+        
+        .category-list li {
+            margin-bottom: 1rem;
+        }
+        
+        .category-list a {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #ddd;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .category-list a:hover {
+            color: var(--neon-color);
+        }
+        
+        .category-count {
+            display: inline-block;
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-color);
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+        
+        /* 标签云 */
+        .tags-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .tag-item {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            color: #ddd;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .tag-item:hover {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            transform: translateY(-2px);
+        }
+        
+        /* 分页样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 3rem;
+        }
+        
+        .pagination ul {
+            display: flex;
+            list-style: none;
+            gap: 0.5rem;
+        }
+        
+        .pagination li a,
+        .pagination li span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--dark-surface);
+            color: #ddd;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .pagination li a:hover {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+        }
+        
+        .pagination li.active span {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 992px) {
+            .blog-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .blog-sidebar {
+                order: -1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .blog-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- 博客页面标题 -->
+    <div class="blog-header">
+        <h1 class="neon-text">博客</h1>
+        <div class="blog-filters">
+            <form method="get" action="{{ url_for('blog.blog_index') }}">
+                <select name="sort" class="filter-select" onchange="this.form.submit()">
+                    <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>最新发布</option>
+                    <option value="popular" {% if sort_by == 'popular' %}selected{% endif %}>最受欢迎</option>
+                    <option value="comments" {% if sort_by == 'comments' %}selected{% endif %}>评论最多</option>
+                </select>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 博客内容区域 -->
+    <div class="blog-container">
+        <!-- 文章列表 -->
+        <div class="posts-list">
+            {% if posts %}
+                {% for post in posts %}
+                    <article class="post-item">
+                        <div class="post-header">
+                            <div class="post-meta-top">
+                                <a href="{{ url_for('blog.category', slug=post.category.slug) }}" class="post-category">{{ post.category.name }}</a>
+                                <span>{{ post.created_at.strftime('%Y-%m-%d') }}</span>
+                            </div>
+                            
+                            <h2 class="post-title">
+                                <a href="{{ url_for('blog.blog_post', slug=post.slug) }}">{{ post.title }}</a>
+                            </h2>
+                            
+                            <p class="post-excerpt">{{ post.excerpt or post.content[:200] }}...</p>
+                            
+                            <div class="post-meta-bottom">
+                                <div class="post-author">
+                                    <img src="{{ post.author.avatar_url or url_for('static', filename='images/avatars/default.png') }}" alt="作者头像" class="author-avatar">
+                                    <span>{{ post.author.username }}</span>
+                                </div>
+                                <div class="post-comments">
+                                    <i class="fas fa-comment"></i>
+                                    <span>{{ post.comments|length }}</span>
+                                </div>
+                            </div>
+                            
+                            <a href="{{ url_for('blog.blog_post', slug=post.slug) }}" class="read-more-btn">阅读全文</a>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <div class="no-results">
+                    <p>暂无文章</p>
+                </div>
+            {% endif %}
+            
+            <!-- 分页导航 -->
+            {% if pagination %}
+                <div class="pagination">
+                    <ul>
+                        {% if pagination.has_prev %}
+                            <li><a href="{{ url_for('blog.blog_index', page=pagination.prev_num, sort=sort_by) }}"><i class="fas fa-chevron-left"></i></a></li>
+                        {% else %}
+                            <li class="disabled"><span><i class="fas fa-chevron-left"></i></span></li>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if pagination.page == page_num %}
+                                    <li class="active"><span>{{ page_num }}</span></li>
+                                {% else %}
+                                    <li><a href="{{ url_for('blog.blog_index', page=page_num, sort=sort_by) }}">{{ page_num }}</a></li>
+                                {% endif %}
+                            {% else %}
+                                <li><span>...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                            <li><a href="{{ url_for('blog.blog_index', page=pagination.next_num, sort=sort_by) }}"><i class="fas fa-chevron-right"></i></a></li>
+                        {% else %}
+                            <li class="disabled"><span><i class="fas fa-chevron-right"></i></span></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- 侧边栏 -->
+        <div class="blog-sidebar">
+            <!-- 搜索框 -->
+            <div class="sidebar-widget">
+                <h3>搜索</h3>
+                <form class="sidebar-search" action="{{ url_for('main.search') }}" method="get">
+                    <input type="text" name="q" placeholder="搜索文章...">
+                    <button type="submit"><i class="fas fa-search"></i></button>
+                </form>
+            </div>
+            
+            <!-- 分类列表 -->
+            <div class="sidebar-widget">
+                <h3>分类</h3>
+                <ul class="category-list">
+                    {% for category in categories %}
+                        <li>
+                            <a href="{{ url_for('blog.category', slug=category.slug) }}">
+                                {{ category.name }}
+                                <span class="category-count">{{ category.posts|length }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- 标签云 -->
+            <div class="sidebar-widget">
+                <h3>标签</h3>
+                <div class="tags-cloud">
+                    {% for tag in tags %}
+                        <a href="{{ url_for('blog.tag', slug=tag.slug) }}" class="tag-item">
+                            {{ tag.name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- 热门文章 -->
+            <div class="sidebar-widget">
+                <h3>热门文章</h3>
+                <div class="popular-posts">
+                    {% for post in popular_posts %}
+                        <div class="popular-post-item">
+                            <a href="{{ url_for('blog.blog_post', slug=post.slug) }}" class="popular-post-link">
+                                <h4>{{ post.title }}</h4>
+                                <span>{{ post.created_at.strftime('%Y-%m-%d') }}</span>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        // 文章列表交互效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const postItems = document.querySelectorAll('.post-item');
+            
+            postItems.forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    this.style.borderLeftWidth = '4px';
+                });
+                
+                item.addEventListener('mouseleave', function() {
+                    this.style.borderLeftWidth = '1px';
+                });
+            });
+        });
+    </script>
+{% endblock %}

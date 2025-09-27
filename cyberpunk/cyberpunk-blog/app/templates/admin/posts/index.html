@@ -1,0 +1,811 @@
+{% extends "admin/base.html" %}
+
+{% block title %}文章管理 - {{ site_title or '赛博朋克博客' }}{% endblock %}
+
+{% block css %}
+    <style>
+        /* 文章管理列表样式 */
+        .posts-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        
+        /* 操作栏样式 */
+        .posts-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .posts-actions-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .add-post-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+        }
+        
+        .add-post-button:hover {
+            background: var(--neon-color-alt);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 255, 0.4);
+        }
+        
+        .add-post-button:active {
+            transform: translateY(0);
+        }
+        
+        .filter-select {
+            padding: 0.8rem 1.2rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #ddd;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+        
+        /* 搜索框样式 */
+        .search-container {
+            position: relative;
+            width: 300px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.8rem 1.2rem 0.8rem 3rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #ddd;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+        
+        .search-input::placeholder {
+            color: #777;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #777;
+        }
+        
+        /* 表格样式 */
+        .posts-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .posts-table th,
+        .posts-table td {
+            padding: 1.2rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .posts-table th {
+            background: rgba(0, 255, 255, 0.05);
+            color: #999;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .posts-table tbody tr {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .posts-table tbody tr:hover {
+            background: rgba(0, 255, 255, 0.05);
+            transform: translateX(5px);
+        }
+        
+        .posts-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* 表格内容样式 */
+        .post-title {
+            color: #fff;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .post-title:hover {
+            color: var(--neon-color);
+            text-decoration: underline;
+        }
+        
+        .post-category {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 20px;
+            color: var(--neon-color);
+            font-size: 0.85rem;
+            margin-right: 0.5rem;
+        }
+        
+        .post-tag {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: rgba(247, 6, 207, 0.1);
+            border: 1px solid rgba(247, 6, 207, 0.2);
+            border-radius: 15px;
+            color: #f706cf;
+            font-size: 0.8rem;
+            margin-right: 0.3rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .post-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .post-status.published {
+            background: rgba(0, 200, 83, 0.2);
+            color: #00c853;
+            border: 1px solid rgba(0, 200, 83, 0.3);
+        }
+        
+        .post-status.draft {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+            border: 1px solid rgba(255, 152, 0, 0.3);
+        }
+        
+        .post-status.pending {
+            background: rgba(255, 235, 59, 0.2);
+            color: #ffeb3b;
+            border: 1px solid rgba(255, 235, 59, 0.3);
+        }
+        
+        .post-status.private {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        
+        /* 操作按钮组 */
+        .post-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+        
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            color: #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .action-button:hover {
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-color);
+            border-color: var(--neon-color);
+            transform: translateY(-2px);
+        }
+        
+        .action-button.edit:hover {
+            background: rgba(33, 150, 243, 0.1);
+            color: #2196f3;
+            border-color: #2196f3;
+        }
+        
+        .action-button.delete:hover {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            border-color: #f44336;
+        }
+        
+        /* 分页导航 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 2rem;
+            gap: 0.5rem;
+        }
+        
+        .pagination-button {
+            padding: 0.6rem 1rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #ddd;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .pagination-button:hover {
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-color);
+            border-color: var(--neon-color);
+        }
+        
+        .pagination-button.active {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            border-color: var(--neon-color);
+        }
+        
+        .pagination-button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination-button.disabled:hover {
+            background: rgba(10, 10, 15, 0.7);
+            color: #ddd;
+            border-color: rgba(0, 255, 255, 0.3);
+            transform: none;
+        }
+        
+        /* 批量操作 */
+        .bulk-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            border-radius: 6px;
+        }
+        
+        .select-all {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #ddd;
+            cursor: pointer;
+        }
+        
+        .select-all input[type="checkbox"] {
+            accent-color: var(--neon-color);
+            width: 18px;
+            height: 18px;
+        }
+        
+        .bulk-action-select {
+            padding: 0.6rem 1rem;
+            background: rgba(10, 10, 15, 0.9);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            color: #ddd;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        
+        .apply-bulk-action {
+            padding: 0.6rem 1.2rem;
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .apply-bulk-action:hover {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: #f44336;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(15, 15, 20, 0.8);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        .empty-state-icon {
+            font-size: 5rem;
+            color: rgba(0, 255, 255, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .empty-state-title {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state-description {
+            color: #777;
+            margin-bottom: 2rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .posts-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .posts-actions-left,
+            .search-container {
+                width: 100%;
+            }
+            
+            .search-container {
+                max-width: 100%;
+            }
+            
+            .posts-table th:nth-child(4),
+            .posts-table td:nth-child(4),
+            .posts-table th:nth-child(5),
+            .posts-table td:nth-child(5) {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .posts-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .posts-table th,
+            .posts-table td {
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+            
+            .post-actions {
+                flex-direction: column;
+                align-items: flex-end;
+            }
+            
+            .pagination {
+                flex-wrap: wrap;
+            }
+            
+            .pagination-button {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.85rem;
+            }
+            
+            .bulk-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .select-all {
+                justify-content: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <a href="{{ url_for('admin.dashboard') }}">仪表盘</a>
+    <span class="admin-breadcrumbs-separator">/</span>
+    <span>文章管理</span>
+{% endblock %}
+
+{% block content_body %}
+    <div class="posts-container">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1>文章管理</h1>
+            <p>管理您博客的所有文章内容，包括发布新文章、编辑现有文章以及查看文章统计数据。</p>
+        </div>
+        
+        <!-- 操作栏 -->
+        <div class="posts-actions">
+            <div class="posts-actions-left">
+                <a href="{{ url_for('admin.add_post') }}" class="add-post-button">
+                    <i class="fas fa-plus"></i>
+                    <span>新增文章</span>
+                </a>
+                
+                <select class="filter-select" id="category-filter">
+                    <option value="all">全部分类</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }} ({{ category.post_count }})</option>
+                    {% endfor %}
+                </select>
+                
+                <select class="filter-select" id="status-filter">
+                    <option value="all">全部状态</option>
+                    <option value="published">已发布</option>
+                    <option value="draft">草稿</option>
+                    <option value="pending">待审核</option>
+                    <option value="private">私密</option>
+                </select>
+                
+                <select class="filter-select" id="sort-filter">
+                    <option value="newest">最新发布</option>
+                    <option value="oldest">最早发布</option>
+                    <option value="most_viewed">最多浏览</option>
+                    <option value="most_commented">最多评论</option>
+                </select>
+            </div>
+            
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="post-search" class="search-input" placeholder="搜索文章标题、内容...">
+            </div>
+        </div>
+        
+        <!-- 文章表格 -->
+        {% if posts.items %} 
+            <table class="posts-table">
+                <thead>
+                    <tr>
+                        <th width="5%">
+                            <input type="checkbox" id="select-all-posts">
+                        </th>
+                        <th width="30%">标题</th>
+                        <th width="15%">分类</th>
+                        <th width="15%">发布日期</th>
+                        <th width="10%">浏览量</th>
+                        <th width="10%">状态</th>
+                        <th width="15%">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in posts.items %} 
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="post-checkbox" data-id="{{ post.id }}">
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin.edit_post', id=post.id) }}" class="post-title">{{ post.title }}</a>
+                                <div class="post-meta">
+                                    {% if post.tags %}
+                                        {% for tag in post.tags[:3] %}
+                                            <span class="post-tag">{{ tag.name }}</span>
+                                        {% endfor %}
+                                        {% if post.tags|length > 3 %}
+                                            <span class="post-tag">+{{ post.tags|length - 3 }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if post.category %}
+                                    <span class="post-category">{{ post.category.name }}</span>
+                                {% else %}
+                                    <span class="post-category">未分类</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ post.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ post.views }}</td>
+                            <td>
+                                <span class="post-status {{ post.status }}">
+                                    <i class="fas fa-circle"></i>
+                                    {% if post.status == 'published' %}已发布
+                                    {% elif post.status == 'draft' %}草稿
+                                    {% elif post.status == 'pending' %}待审核
+                                    {% elif post.status == 'private' %}私密
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="post-actions">
+                                    <a href="{{ url_for('admin.edit_post', id=post.id) }}" class="action-button edit" title="编辑">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin.preview_post', id=post.id) }}" class="action-button" title="预览">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="#" class="action-button delete" title="删除" data-id="{{ post.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- 批量操作 -->
+            <div class="bulk-actions">
+                <label class="select-all">
+                    <input type="checkbox" id="bulk-select-all">
+                    <span>全选</span>
+                </label>
+                
+                <select class="bulk-action-select" id="bulk-action">
+                    <option value="">批量操作</option>
+                    <option value="publish">发布</option>
+                    <option value="draft">转为草稿</option>
+                    <option value="delete">删除</option>
+                </select>
+                
+                <button class="apply-bulk-action" id="apply-bulk-action">应用</button>
+            </div>
+            
+            <!-- 分页导航 -->
+            <div class="pagination">
+                {% if posts.has_prev %}
+                    <a href="{{ url_for('admin.posts', page=posts.prev_num) }}" class="pagination-button">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                {% else %}
+                    <button class="pagination-button disabled">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                {% endif %}
+                
+                {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num == posts.page %}
+                            <button class="pagination-button active">{{ page_num }}</button>
+                        {% else %}
+                            <a href="{{ url_for('admin.posts', page=page_num) }}" class="pagination-button">{{ page_num }}</a>
+                        {% endif %}
+                    {% else %}
+                        <span class="pagination-button">...</span>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if posts.has_next %}
+                    <a href="{{ url_for('admin.posts', page=posts.next_num) }}" class="pagination-button">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                {% else %}
+                    <button class="pagination-button disabled">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                {% endif %}
+            </div>
+        {% else %} 
+            <!-- 空状态 -->
+            <div class="empty-state">
+                <i class="fas fa-file-alt empty-state-icon"></i>
+                <h2 class="empty-state-title">暂无文章</h2>
+                <p class="empty-state-description">
+                    您的博客还没有任何文章。点击下方按钮开始创建您的第一篇博客文章吧！
+                </p>
+                <a href="{{ url_for('admin.add_post') }}" class="add-post-button">
+                    <i class="fas fa-plus"></i>
+                    <span>创建第一篇文章</span>
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 全选/取消全选功能
+            const selectAllCheckbox = document.getElementById('select-all-posts');
+            const bulkSelectAllCheckbox = document.getElementById('bulk-select-all');
+            const postCheckboxes = document.querySelectorAll('.post-checkbox');
+            
+            function updateSelectAll() {
+                const allChecked = Array.from(postCheckboxes).every(checkbox => checkbox.checked);
+                selectAllCheckbox.checked = allChecked;
+                bulkSelectAllCheckbox.checked = allChecked;
+            }
+            
+            selectAllCheckbox.addEventListener('change', function() {
+                postCheckboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                bulkSelectAllCheckbox.checked = selectAllCheckbox.checked;
+            });
+            
+            bulkSelectAllCheckbox.addEventListener('change', function() {
+                postCheckboxes.forEach(checkbox => {
+                    checkbox.checked = bulkSelectAllCheckbox.checked;
+                });
+                selectAllCheckbox.checked = bulkSelectAllCheckbox.checked;
+            });
+            
+            postCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectAll);
+            });
+            
+            // 删除确认
+            const deleteButtons = document.querySelectorAll('.action-button.delete');
+            
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const postId = this.getAttribute('data-id');
+                    const postTitle = this.closest('tr').querySelector('.post-title').textContent;
+                    
+                    if (confirm(`确定要删除文章 "${postTitle}" 吗？此操作不可撤销。`)) {
+                        // 这里应该发送删除请求到服务器
+                        // 模拟删除操作
+                        console.log(`删除文章ID: ${postId}`);
+                        // 实际应用中应该是这样的：
+                        // window.location.href = `{{ url_for('admin.delete_post', id=0) }}`.replace('0', postId);
+                    }
+                });
+            });
+            
+            // 批量操作应用按钮
+            const applyBulkActionButton = document.getElementById('apply-bulk-action');
+            const bulkActionSelect = document.getElementById('bulk-action');
+            
+            applyBulkActionButton.addEventListener('click', function() {
+                const selectedPosts = Array.from(postCheckboxes)
+                    .filter(checkbox => checkbox.checked)
+                    .map(checkbox => checkbox.getAttribute('data-id'));
+                
+                const action = bulkActionSelect.value;
+                
+                if (selectedPosts.length === 0) {
+                    alert('请先选择要操作的文章');
+                    return;
+                }
+                
+                if (!action) {
+                    alert('请选择要执行的批量操作');
+                    return;
+                }
+                
+                let confirmMessage = '';
+                switch (action) {
+                    case 'publish':
+                        confirmMessage = `确定要将选中的 ${selectedPosts.length} 篇文章设为已发布状态吗？`;
+                        break;
+                    case 'draft':
+                        confirmMessage = `确定要将选中的 ${selectedPosts.length} 篇文章设为草稿状态吗？`;
+                        break;
+                    case 'delete':
+                        confirmMessage = `确定要删除选中的 ${selectedPosts.length} 篇文章吗？此操作不可撤销。`;
+                        break;
+                }
+                
+                if (confirm(confirmMessage)) {
+                    // 这里应该发送批量操作请求到服务器
+                    console.log(`批量操作: ${action}, 文章ID: ${selectedPosts.join(', ')}`);
+                    // 实际应用中应该是这样的：
+                    // const form = document.createElement('form');
+                    // form.method = 'POST';
+                    // form.action = '{{ url_for('admin.bulk_actions_posts') }}';
+                    // // 添加表单数据
+                    // selectedPosts.forEach(id => {
+                    //     const input = document.createElement('input');
+                    //     input.type = 'hidden';
+                    //     input.name = 'post_ids';
+                    //     input.value = id;
+                    //     form.appendChild(input);
+                    // });
+                    // const actionInput = document.createElement('input');
+                    // actionInput.type = 'hidden';
+                    // actionInput.name = 'action';
+                    // actionInput.value = action;
+                    // form.appendChild(actionInput);
+                    // document.body.appendChild(form);
+                    // form.submit();
+                }
+            });
+            
+            // 筛选和搜索功能
+            const categoryFilter = document.getElementById('category-filter');
+            const statusFilter = document.getElementById('status-filter');
+            const sortFilter = document.getElementById('sort-filter');
+            const postSearch = document.getElementById('post-search');
+            
+            function applyFilters() {
+                // 在实际应用中，这里应该发送请求到服务器获取筛选后的文章列表
+                const category = categoryFilter.value;
+                const status = statusFilter.value;
+                const sort = sortFilter.value;
+                const search = postSearch.value;
+                
+                console.log('应用筛选:', {
+                    category,
+                    status,
+                    sort,
+                    search
+                });
+                
+                // 实际应用中应该是这样的：
+                // window.location.href = `{{ url_for('admin.posts') }}?category=${category}&status=${status}&sort=${sort}&search=${encodeURIComponent(search)}`;
+            }
+            
+            categoryFilter.addEventListener('change', applyFilters);
+            statusFilter.addEventListener('change', applyFilters);
+            sortFilter.addEventListener('change', applyFilters);
+            
+            // 搜索框延迟搜索
+            let searchTimeout;
+            postSearch.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(applyFilters, 500);
+            });
+            
+            // 为表格行添加点击事件
+            const tableRows = document.querySelectorAll('.posts-table tbody tr');
+            
+            tableRows.forEach(row => {
+                row.addEventListener('click', function(e) {
+                    // 如果点击的是复选框或操作按钮，不跳转
+                    if (e.target.tagName === 'INPUT' || e.target.closest('.post-actions')) {
+                        return;
+                    }
+                    
+                    const editLink = this.querySelector('.post-title');
+                    if (editLink) {
+                        window.location.href = editLink.getAttribute('href');
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

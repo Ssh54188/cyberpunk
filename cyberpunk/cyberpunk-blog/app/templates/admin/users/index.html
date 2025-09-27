@@ -1,0 +1,914 @@
+{% extends "admin/base.html" %}
+
+{% block title %}用户管理 - {{ site_title or '赛博朋克博客' }}{% endblock %}
+
+{% block css %}
+    <style>
+        /* 用户管理页面样式 */
+        .users-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-title {
+            margin: 0;
+        }
+        
+        .page-description {
+            margin: 0.5rem 0 0 0;
+            color: #777;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background: var(--neon-color-alt);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 255, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(100, 100, 100, 0.3);
+            color: #ddd;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(100, 100, 100, 0.5);
+            border-color: rgba(0, 255, 255, 0.4);
+        }
+        
+        .btn-danger {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        
+        .btn-danger:hover {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: #f44336;
+        }
+        
+        /* 过滤和搜索区域 */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 0.8rem 1.2rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+            background: rgba(10, 10, 15, 0.9);
+        }
+        
+        .search-input::placeholder {
+            color: #777;
+        }
+        
+        .filter-select {
+            padding: 0.8rem 1.2rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+        }
+        
+        /* 用户表格 */
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .users-table thead {
+            background: rgba(10, 10, 15, 0.9);
+            border-bottom: 2px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .users-table th {
+            padding: 1.2rem 1.5rem;
+            text-align: left;
+            color: #ddd;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .users-table td {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+            color: #ddd;
+        }
+        
+        .users-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .users-table tr:hover {
+            background: rgba(0, 255, 255, 0.05);
+        }
+        
+        /* 用户信息 */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(247, 6, 207, 0.1);
+            border: 2px solid rgba(247, 6, 207, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #f706cf;
+            font-size: 1.2rem;
+            font-weight: bold;
+            overflow: hidden;
+        }
+        
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .user-name {
+            font-weight: 500;
+            color: #fff;
+        }
+        
+        .user-email {
+            font-size: 0.9rem;
+            color: #777;
+            margin-top: 0.2rem;
+        }
+        
+        /* 角色标签 */
+        .role-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .role-admin {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            color: #f44336;
+        }
+        
+        .role-editor {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            color: var(--neon-color);
+        }
+        
+        .role-author {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            color: #4caf50;
+        }
+        
+        .role-user {
+            background: rgba(158, 158, 158, 0.1);
+            border: 1px solid rgba(158, 158, 158, 0.3);
+            color: #9e9e9e;
+        }
+        
+        /* 状态指示器 */
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .status-active .status-dot {
+            background: #4caf50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        
+        .status-inactive .status-dot {
+            background: #9e9e9e;
+        }
+        
+        .status-pending .status-dot {
+            background: #ff9800;
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+        }
+        
+        /* 操作按钮组 */
+        .action-links {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .action-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: rgba(15, 15, 20, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            color: #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .action-link:hover {
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-color);
+            border-color: var(--neon-color);
+        }
+        
+        .action-link.delete:hover {
+            color: #f44336;
+            border-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+        
+        /* 分页导航 */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .pagination-info {
+            color: #777;
+            font-size: 0.9rem;
+        }
+        
+        .pagination-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .pagination-link {
+            padding: 0.6rem 1rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            color: #ddd;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .pagination-link:hover:not(.disabled) {
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-color);
+            border-color: var(--neon-color);
+        }
+        
+        .pagination-link.active {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            border-color: var(--neon-color);
+        }
+        
+        .pagination-link.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #777;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+        }
+        
+        .empty-state-title {
+            font-size: 1.5rem;
+            color: #ddd;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state-description {
+            margin-bottom: 2rem;
+        }
+        
+        /* 批量操作 */
+        .batch-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .batch-actions.visible {
+            opacity: 1;
+        }
+        
+        .batch-actions-select {
+            padding: 0.6rem 1rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+        }
+        
+        /* 复选框样式 */
+        .checkbox-custom {
+            display: inline-block;
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .checkbox-custom input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 20px;
+            width: 20px;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-custom:hover input ~ .checkmark {
+            background: rgba(10, 10, 15, 0.9);
+            border-color: var(--neon-color);
+        }
+        
+        .checkbox-custom input:checked ~ .checkmark {
+            background: var(--neon-color);
+            border-color: var(--neon-color);
+        }
+        
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        
+        .checkbox-custom input:checked ~ .checkmark:after {
+            display: block;
+        }
+        
+        .checkbox-custom .checkmark:after {
+            left: 7px;
+            top: 3px;
+            width: 5px;
+            height: 10px;
+            border: solid var(--dark-bg);
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .action-buttons {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            .filter-bar {
+                flex-direction: column;
+            }
+            
+            .search-input,
+            .filter-select {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .users-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .users-table th,
+            .users-table td {
+                padding: 1rem;
+            }
+            
+            .pagination {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .pagination-info {
+                order: 2;
+            }
+            
+            .pagination-controls {
+                order: 1;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <a href="{{ url_for('admin.dashboard') }}">仪表盘</a>
+    <span class="admin-breadcrumbs-separator">/</span>
+    <span>用户管理</span>
+{% endblock %}
+
+{% block content_body %}
+    <div class="users-container">
+        <!-- 页面标题和操作按钮 -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">用户管理</h1>
+                <p class="page-description">管理网站用户，分配角色权限，查看用户活动和统计信息</p>
+            </div>
+            <div class="action-buttons">
+                <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i> 新增用户
+                </a>
+            </div>
+        </div>
+        
+        <!-- 批量操作栏 -->
+        <div class="batch-actions" id="batch-actions">
+            <span style="color: #ddd; font-weight: 500;">已选择 <span id="selected-count">0</span> 个用户</span>
+            <select class="batch-actions-select">
+                <option value="">批量操作</option>
+                <option value="activate">激活</option>
+                <option value="deactivate">禁用</option>
+                <option value="delete">删除</option>
+            </select>
+            <button class="btn btn-secondary" id="apply-batch-action">应用</button>
+            <button class="btn btn-secondary" id="cancel-batch-selection">取消</button>
+        </div>
+        
+        <!-- 过滤和搜索区域 -->
+        <div class="filter-bar">
+            <input type="text" class="search-input" placeholder="搜索用户名、邮箱..." id="user-search">
+            <select class="filter-select" id="role-filter">
+                <option value="">所有角色</option>
+                <option value="admin">管理员</option>
+                <option value="editor">编辑</option>
+                <option value="author">作者</option>
+                <option value="user">普通用户</option>
+            </select>
+            <select class="filter-select" id="status-filter">
+                <option value="">所有状态</option>
+                <option value="active">已激活</option>
+                <option value="inactive">已禁用</option>
+                <option value="pending">待审核</option>
+            </select>
+        </div>
+        
+        <!-- 用户表格 -->
+        {% if users.items %} 
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">
+                            <label class="checkbox-custom">
+                                <input type="checkbox" id="select-all">
+                                <span class="checkmark"></span>
+                            </label>
+                        </th>
+                        <th>用户信息</th>
+                        <th>角色</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>最后登录</th>
+                        <th style="text-align: right;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users.items %} 
+                        <tr data-user-id="{{ user.id }}">
+                            <td>
+                                <label class="checkbox-custom">
+                                    <input type="checkbox" class="user-checkbox">
+                                    <span class="checkmark"></span>
+                                </label>
+                            </td>
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">
+                                        {% if user.avatar %}
+                                            <img src="{{ user.avatar }}" alt="{{ user.username }}">
+                                        {% else %}
+                                            {{ user.username[:2] | upper }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="user-details">
+                                        <div class="user-name">{{ user.username }}</div>
+                                        <div class="user-email">{{ user.email }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="role-badge role-{{ user.role | lower }}">
+                                    {{ user.role }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-indicator status-{{ user.status }}">
+                                    <span class="status-dot"></span>
+                                    {% if user.status == 'active' %}已激活{% elif user.status == 'inactive' %}已禁用{% elif user.status == 'pending' %}待审核{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                {{ user.created_at.strftime('%Y-%m-%d') }}
+                            </td>
+                            <td>
+                                {% if user.last_login %}{{ user.last_login.strftime('%Y-%m-%d %H:%M') }}{% else %}从未登录{% endif %}
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="action-links">
+                                    <a href="{{ url_for('admin.edit_user', id=user.id) }}" class="action-link" title="编辑">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if user.status == 'active' %}
+                                        <button class="action-link" data-user-id="{{ user.id }}" data-action="deactivate" title="禁用">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    {% else %}
+                                        <button class="action-link" data-user-id="{{ user.id }}" data-action="activate" title="激活">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    {% endif %}
+                                    {% if not (user.role == 'admin' and users.total_admins <= 1) %}
+                                        <button class="action-link delete" data-user-id="{{ user.id }}" title="删除">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- 分页导航 -->
+            <div class="pagination">
+                <div class="pagination-info">
+                    显示 {{ users.page * users.per_page - users.per_page + 1 }} 至 {{ users.page * users.per_page if users.page * users.per_page < users.total else users.total }} 条，共 {{ users.total }} 条记录
+                </div>
+                <div class="pagination-controls">
+                    <a href="{% if users.has_prev %}{{ url_for('admin.users', page=users.prev_num) }}{% else %}#{% endif %}" 
+                        class="pagination-link {% if not users.has_prev %}disabled{% endif %}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    
+                    {% for page_num in users.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            <a href="{{ url_for('admin.users', page=page_num) }}" 
+                                class="pagination-link {% if page_num == users.page %}active{% endif %}">
+                                {{ page_num }}
+                            </a>
+                        {% else %}
+                            <span class="pagination-link">...</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <a href="{% if users.has_next %}{{ url_for('admin.users', page=users.next_num) }}{% else %}#{% endif %}" 
+                        class="pagination-link {% if not users.has_next %}disabled{% endif %}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <!-- 空状态 -->
+            <div class="empty-state">
+                <i class="fas fa-users empty-state-icon"></i>
+                <h3 class="empty-state-title">暂无用户</h3>
+                <p class="empty-state-description">还没有创建任何用户，请点击上方的"新增用户"按钮添加第一个用户。</p>
+                <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i> 新增用户
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 搜索功能
+            const searchInput = document.getElementById('user-search');
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = document.querySelectorAll('.users-table tbody tr');
+                
+                rows.forEach(row => {
+                    const username = row.querySelector('.user-name').textContent.toLowerCase();
+                    const email = row.querySelector('.user-email').textContent.toLowerCase();
+                    
+                    if (username.includes(searchTerm) || email.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+            
+            // 角色过滤
+            const roleFilter = document.getElementById('role-filter');
+            roleFilter.addEventListener('change', function() {
+                const selectedRole = this.value;
+                const rows = document.querySelectorAll('.users-table tbody tr');
+                
+                rows.forEach(row => {
+                    if (!selectedRole) {
+                        row.style.display = '';
+                    } else {
+                        const roleBadge = row.querySelector('.role-badge');
+                        if (roleBadge && roleBadge.classList.contains(`role-${selectedRole}`)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    }
+                });
+            });
+            
+            // 状态过滤
+            const statusFilter = document.getElementById('status-filter');
+            statusFilter.addEventListener('change', function() {
+                const selectedStatus = this.value;
+                const rows = document.querySelectorAll('.users-table tbody tr');
+                
+                rows.forEach(row => {
+                    if (!selectedStatus) {
+                        row.style.display = '';
+                    } else {
+                        const statusIndicator = row.querySelector('.status-indicator');
+                        if (statusIndicator && statusIndicator.classList.contains(`status-${selectedStatus}`)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    }
+                });
+            });
+            
+            // 全选/取消全选
+            const selectAllCheckbox = document.getElementById('select-all');
+            const userCheckboxes = document.querySelectorAll('.user-checkbox');
+            const batchActions = document.getElementById('batch-actions');
+            const selectedCount = document.getElementById('selected-count');
+            
+            selectAllCheckbox.addEventListener('change', function() {
+                const isChecked = this.checked;
+                
+                userCheckboxes.forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                    const row = checkbox.closest('tr');
+                    if (isChecked) {
+                        row.style.background = 'rgba(0, 255, 255, 0.1)';
+                    } else {
+                        row.style.background = '';
+                    }
+                });
+                
+                updateBatchActions();
+            });
+            
+            userCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const row = this.closest('tr');
+                    if (this.checked) {
+                        row.style.background = 'rgba(0, 255, 255, 0.1)';
+                    } else {
+                        row.style.background = '';
+                    }
+                    
+                    // 更新全选复选框状态
+                    const allChecked = Array.from(userCheckboxes).every(cb => cb.checked);
+                    const anyChecked = Array.from(userCheckboxes).some(cb => cb.checked);
+                    
+                    selectAllCheckbox.checked = allChecked;
+                    selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+                    
+                    updateBatchActions();
+                });
+            });
+            
+            function updateBatchActions() {
+                const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
+                selectedCount.textContent = checkedCount;
+                
+                if (checkedCount > 0) {
+                    batchActions.classList.add('visible');
+                } else {
+                    batchActions.classList.remove('visible');
+                }
+            }
+            
+            // 取消批量选择
+            document.getElementById('cancel-batch-selection').addEventListener('click', function() {
+                selectAllCheckbox.checked = false;
+                userCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    const row = checkbox.closest('tr');
+                    row.style.background = '';
+                });
+                batchActions.classList.remove('visible');
+            });
+            
+            // 应用批量操作
+            document.getElementById('apply-batch-action').addEventListener('click', function() {
+                const action = document.querySelector('.batch-actions-select').value;
+                const checkedUsers = document.querySelectorAll('.user-checkbox:checked');
+                const userIds = Array.from(checkedUsers).map(cb => cb.closest('tr').getAttribute('data-user-id'));
+                
+                if (!action || userIds.length === 0) {
+                    alert('请选择操作和用户');
+                    return;
+                }
+                
+                let confirmMessage = '';
+                let actionText = '';
+                
+                if (action === 'activate') {
+                    actionText = '激活';
+                    confirmMessage = `确定要${actionText}选中的 ${userIds.length} 个用户吗？`;
+                } else if (action === 'deactivate') {
+                    actionText = '禁用';
+                    confirmMessage = `确定要${actionText}选中的 ${userIds.length} 个用户吗？禁用后用户将无法登录。`;
+                } else if (action === 'delete') {
+                    actionText = '删除';
+                    confirmMessage = `确定要${actionText}选中的 ${userIds.length} 个用户吗？此操作不可撤销，用户数据将被永久删除！`;
+                }
+                
+                if (confirm(confirmMessage)) {
+                    console.log(`${actionText}用户:`, userIds);
+                    // 在实际应用中，应该发送请求执行相应操作
+                    // 这里仅作为演示
+                }
+            });
+            
+            // 单个用户操作（激活/禁用）
+            document.querySelectorAll('.action-link[data-action]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    const action = this.getAttribute('data-action');
+                    const username = this.closest('tr').querySelector('.user-name').textContent;
+                    
+                    let actionText = action === 'activate' ? '激活' : '禁用';
+                    let confirmMessage = `确定要${actionText}用户 "${username}" 吗？`;
+                    
+                    if (confirm(confirmMessage)) {
+                        console.log(`${actionText}用户:`, userId);
+                        // 在实际应用中，应该发送请求执行相应操作
+                        // 这里仅作为演示
+                        
+                        // 模拟操作成功后的UI更新
+                        const statusIndicator = this.closest('tr').querySelector('.status-indicator');
+                        const statusText = statusIndicator.textContent.trim();
+                        const icon = this.querySelector('i');
+                        
+                        if (action === 'activate') {
+                            statusIndicator.className = 'status-indicator status-active';
+                            statusIndicator.innerHTML = '<span class="status-dot"></span>已激活';
+                            this.setAttribute('data-action', 'deactivate');
+                            icon.className = 'fas fa-ban';
+                            this.title = '禁用';
+                        } else {
+                            statusIndicator.className = 'status-indicator status-inactive';
+                            statusIndicator.innerHTML = '<span class="status-dot"></span>已禁用';
+                            this.setAttribute('data-action', 'activate');
+                            icon.className = 'fas fa-check';
+                            this.title = '激活';
+                        }
+                    }
+                });
+            });
+            
+            // 单个删除操作
+            document.querySelectorAll('.action-link.delete').forEach(button => {
+                button.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    const username = this.closest('tr').querySelector('.user-name').textContent;
+                    
+                    if (confirm(`确定要删除用户 "${username}" 吗？此操作不可撤销，用户数据将被永久删除！`)) {
+                        console.log('删除用户:', userId);
+                        // 在实际应用中，应该发送请求删除用户
+                        // 这里仅作为演示
+                        // window.location.href = `{{ url_for('admin.delete_user', id=0) }}`.replace('0', userId);
+                    }
+                });
+            });
+            
+            // 初始化页面
+            updateBatchActions();
+        });
+    </script>
+{% endblock %}

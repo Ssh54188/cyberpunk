@@ -1,0 +1,918 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if user %}编辑用户{% else %}新增用户{% endif %} - {{ site_title or '赛博朋克博客' }}{% endblock %}
+
+{% block css %}
+    <style>
+        /* 用户编辑页面样式 */
+        .user-edit-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .page-title {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .page-description {
+            margin: 0.5rem 0 0 0;
+            color: #777;
+        }
+        
+        /* 表单样式 */
+        .form-container {
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ddd;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+            background: rgba(10, 10, 15, 0.9);
+        }
+        
+        .form-input::placeholder {
+            color: #777;
+        }
+        
+        /* 选择框样式 */
+        .form-select {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: var(--neon-color);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+        }
+        
+        /* 提示信息 */
+        .form-hint {
+            font-size: 0.85rem;
+            color: #777;
+            margin-top: 0.3rem;
+            display: block;
+        }
+        
+        /* 复选框样式 */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        
+        .checkbox-custom {
+            display: inline-block;
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .checkbox-custom input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 20px;
+            width: 20px;
+            background: rgba(10, 10, 15, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-custom:hover input ~ .checkmark {
+            background: rgba(10, 10, 15, 0.9);
+            border-color: var(--neon-color);
+        }
+        
+        .checkbox-custom input:checked ~ .checkmark {
+            background: var(--neon-color);
+            border-color: var(--neon-color);
+        }
+        
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        
+        .checkbox-custom input:checked ~ .checkmark:after {
+            display: block;
+        }
+        
+        .checkbox-custom .checkmark:after {
+            left: 7px;
+            top: 3px;
+            width: 5px;
+            height: 10px;
+            border: solid var(--dark-bg);
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg);
+        }
+        
+        /* 头像上传区域 */
+        .avatar-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: rgba(10, 10, 15, 0.7);
+            border-radius: 6px;
+            border: 1px dashed rgba(0, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .avatar-upload:hover {
+            background: rgba(10, 10, 15, 0.9);
+            border-color: var(--neon-color);
+            border-style: solid;
+        }
+        
+        .avatar-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(247, 6, 207, 0.1);
+            border: 3px solid rgba(247, 6, 207, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #f706cf;
+            font-size: 2.5rem;
+            font-weight: bold;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .avatar-upload input[type="file"] {
+            display: none;
+        }
+        
+        .avatar-upload-text {
+            text-align: center;
+        }
+        
+        .avatar-upload-title {
+            font-weight: 500;
+            color: #ddd;
+            margin-bottom: 0.3rem;
+        }
+        
+        .avatar-upload-subtitle {
+            font-size: 0.85rem;
+            color: #777;
+        }
+        
+        /* 表单操作按钮 */
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .btn {
+            padding: 0.9rem 1.8rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: var(--neon-color);
+            color: var(--dark-bg);
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background: var(--neon-color-alt);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 255, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(100, 100, 100, 0.3);
+            color: #ddd;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(100, 100, 100, 0.5);
+            border-color: rgba(0, 255, 255, 0.4);
+        }
+        
+        .btn-danger {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        
+        .btn-danger:hover {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: #f44336;
+        }
+        
+        /* 错误提示 */
+        .error-message {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            border-radius: 4px;
+            color: #f44336;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+        }
+        
+        .error-message i {
+            margin-top: 0.1rem;
+            font-size: 1.2rem;
+        }
+        
+        /* 成功提示 */
+        .success-message {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            border-radius: 4px;
+            color: #4caf50;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+        }
+        
+        .success-message i {
+            margin-top: 0.1rem;
+            font-size: 1.2rem;
+        }
+        
+        /* 统计信息 */
+        .stats-container {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(10, 10, 15, 0.7);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .stats-title {
+            font-size: 0.9rem;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--neon-color);
+            margin-bottom: 0.3rem;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 角色和权限区域 */
+        .permissions-section {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(10, 10, 15, 0.7);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        
+        .section-title {
+            font-size: 1rem;
+            color: #ddd;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        
+        .permission-group {
+            padding: 1rem;
+            background: rgba(15, 15, 20, 0.8);
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .permission-group-title {
+            font-weight: 500;
+            color: #ddd;
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+        }
+        
+        .permission-item {
+            margin-bottom: 0.6rem;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 1.5rem;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .stats-grid,
+            .permissions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <a href="{{ url_for('admin.dashboard') }}">仪表盘</a>
+    <span class="admin-breadcrumbs-separator">/</span>
+    <a href="{{ url_for('admin.users') }}">用户管理</a>
+    <span class="admin-breadcrumbs-separator">/</span>
+    <span>{% if user %}编辑用户{% else %}新增用户{% endif %}</span>
+{% endblock %}
+
+{% block content_body %}
+    <div class="user-edit-container">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1 class="page-title">
+                {% if user %}
+                    <i class="fas fa-edit"></i> 编辑用户
+                {% else %}
+                    <i class="fas fa-user-plus"></i> 新增用户
+                {% endif %}
+            </h1>
+            <p class="page-description">
+                {% if user %}
+                    修改用户信息，设置角色和权限。
+                {% else %}
+                    创建新用户账号，分配适当的角色和权限。
+                {% endif %}
+            </p>
+        </div>
+        
+        <!-- 错误提示 -->
+        {% if error %}
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong>错误:</strong> {{ error }}
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- 成功提示 -->
+        {% if success %}
+            <div class="success-message">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <strong>成功:</strong> {{ success }}
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- 表单容器 -->
+        <div class="form-container">
+            <form method="post" enctype="multipart/form-data" action="{% if user %}{{ url_for('admin.edit_user', id=user.id) }}{% else %}{{ url_for('admin.add_user') }}{% endif %}">
+                <div class="form-grid">
+                    <!-- 头像上传 -->
+                    <div class="form-group full-width">
+                        <label class="form-label">用户头像</label>
+                        <label class="avatar-upload">
+                            <input type="file" name="avatar" accept="image/*">
+                            <div class="avatar-preview" id="avatar-preview">
+                                {% if user and user.avatar %}
+                                    <img src="{{ user.avatar }}" alt="{{ user.username }}">
+                                {% else %}
+                                    {{ user.username[:2] | upper if user else 'U' }}
+                                {% endif %}
+                            </div>
+                            <div class="avatar-upload-text">
+                                <div class="avatar-upload-title">点击上传头像</div>
+                                <div class="avatar-upload-subtitle">支持 JPG、PNG、GIF 格式，最大 2MB</div>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <!-- 用户名 -->
+                    <div class="form-group">
+                        <label for="username" class="form-label">
+                            用户名 <span style="color: #f44336;">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            class="form-input" 
+                            placeholder="输入用户名" 
+                            value="{{ user.username if user else '' }}" 
+                            {% if user %}readonly{% endif %} 
+                            required
+                        >
+                        <span class="form-hint">用户名用于登录和显示，创建后不可修改。</span>
+                    </div>
+                    
+                    <!-- 邮箱 -->
+                    <div class="form-group">
+                        <label for="email" class="form-label">
+                            电子邮箱 <span style="color: #f44336;">*</span>
+                        </label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            class="form-input" 
+                            placeholder="输入电子邮箱" 
+                            value="{{ user.email if user else '' }}" 
+                            required
+                        >
+                        <span class="form-hint">用于找回密码和接收通知。</span>
+                    </div>
+                    
+                    <!-- 密码 -->
+                    <div class="form-group">
+                        <label for="password" class="form-label">
+                            {% if user %}新密码{% else %}密码{% endif %} {% if not user %}<span style="color: #f44336;">*</span>{% endif %}
+                        </label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="form-input" 
+                            placeholder="{% if user %}留空则不修改密码{% else %}输入密码{% endif %}"
+                            {% if not user %}required{% endif %}
+                        >
+                        <span class="form-hint">密码长度至少8位，包含字母和数字。</span>
+                    </div>
+                    
+                    <!-- 确认密码 -->
+                    <div class="form-group">
+                        <label for="confirm_password" class="form-label">
+                            {% if user %}确认新密码{% else %}确认密码{% endif %} {% if not user %}<span style="color: #f44336;">*</span>{% endif %}
+                        </label>
+                        <input 
+                            type="password" 
+                            id="confirm_password" 
+                            name="confirm_password" 
+                            class="form-input" 
+                            placeholder="{% if user %}留空则不修改密码{% else %}再次输入密码{% endif %}"
+                            {% if not user %}required{% endif %}
+                        >
+                    </div>
+                    
+                    <!-- 角色 -->
+                    <div class="form-group">
+                        <label for="role" class="form-label">
+                            用户角色 <span style="color: #f44336;">*</span>
+                        </label>
+                        <select 
+                            id="role" 
+                            name="role" 
+                            class="form-select" 
+                            required
+                        >
+                            <option value="">选择用户角色</option>
+                            <option value="user" {% if user and user.role == 'user' %}selected{% endif %}>普通用户</option>
+                            <option value="author" {% if user and user.role == 'author' %}selected{% endif %}>作者</option>
+                            <option value="editor" {% if user and user.role == 'editor' %}selected{% endif %}>编辑</option>
+                            <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>管理员</option>
+                        </select>
+                        <span class="form-hint">角色决定了用户的权限范围。</span>
+                    </div>
+                    
+                    <!-- 状态 -->
+                    <div class="form-group">
+                        <label for="status" class="form-label">
+                            用户状态 <span style="color: #f44336;">*</span>
+                        </label>
+                        <select 
+                            id="status" 
+                            name="status" 
+                            class="form-select" 
+                            required
+                        >
+                            <option value="">选择用户状态</option>
+                            <option value="active" {% if user and user.status == 'active' %}selected{% endif %}>已激活</option>
+                            <option value="inactive" {% if user and user.status == 'inactive' %}selected{% endif %}>已禁用</option>
+                            <option value="pending" {% if user and user.status == 'pending' %}selected{% endif %}>待审核</option>
+                        </select>
+                        <span class="form-hint">已禁用的用户将无法登录系统。</span>
+                    </div>
+                    
+                    <!-- 个人资料 -->
+                    <div class="form-group full-width">
+                        <label class="section-title">
+                            <i class="fas fa-id-card"></i> 个人资料
+                        </label>
+                    </div>
+                    
+                    <!-- 昵称 -->
+                    <div class="form-group">
+                        <label for="nickname" class="form-label">
+                            昵称
+                        </label>
+                        <input 
+                            type="text" 
+                            id="nickname" 
+                            name="nickname" 
+                            class="form-input" 
+                            placeholder="输入昵称" 
+                            value="{{ user.nickname if user else '' }}"
+                        >
+                        <span class="form-hint">显示在前台的用户名称，可与用户名不同。</span>
+                    </div>
+                    
+                    <!-- 网站 -->
+                    <div class="form-group">
+                        <label for="website" class="form-label">
+                            个人网站
+                        </label>
+                        <input 
+                            type="url" 
+                            id="website" 
+                            name="website" 
+                            class="form-input" 
+                            placeholder="输入个人网站地址" 
+                            value="{{ user.website if user else '' }}"
+                        >
+                    </div>
+                    
+                    <!-- 社交媒体 -->
+                    <div class="form-group">
+                        <label for="github" class="form-label">
+                            GitHub
+                        </label>
+                        <input 
+                            type="url" 
+                            id="github" 
+                            name="github" 
+                            class="form-input" 
+                            placeholder="输入GitHub个人主页地址" 
+                            value="{{ user.github if user else '' }}"
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="twitter" class="form-label">
+                            Twitter/X
+                        </label>
+                        <input 
+                            type="url" 
+                            id="twitter" 
+                            name="twitter" 
+                            class="form-input" 
+                            placeholder="输入Twitter/X个人主页地址" 
+                            value="{{ user.twitter if user else '' }}"
+                        >
+                    </div>
+                </div>
+                
+                <!-- 用户权限 -->
+                <div class="permissions-section">
+                    <label class="section-title">
+                        <i class="fas fa-shield-alt"></i> 特殊权限
+                    </label>
+                    <div class="permissions-grid">
+                        <div class="permission-group">
+                            <div class="permission-group-title">内容管理</div>
+                            <div class="permission-item">
+                                <label class="checkbox-custom">
+                                    <input type="checkbox" name="can_publish" {% if user and user.can_publish %}checked{% endif %}>
+                                    <span class="checkmark"></span>
+                                    允许发布文章
+                                </label>
+                            </div>
+                            <div class="permission-item">
+                                <label class="checkbox-custom">
+                                    <input type="checkbox" name="can_edit_other_posts" {% if user and user.can_edit_other_posts %}checked{% endif %}>
+                                    <span class="checkmark"></span>
+                                    允许编辑他人文章
+                                </label>
+                            </div>
+                        </div>
+                        <div class="permission-group">
+                            <div class="permission-group-title">系统设置</div>
+                            <div class="permission-item">
+                                <label class="checkbox-custom">
+                                    <input type="checkbox" name="can_access_admin" {% if user and user.can_access_admin %}checked{% endif %}>
+                                    <span class="checkmark"></span>
+                                    允许访问管理后台
+                                </label>
+                            </div>
+                            <div class="permission-item">
+                                <label class="checkbox-custom">
+                                    <input type="checkbox" name="can_manage_users" {% if user and user.can_manage_users %}checked{% endif %}>
+                                    <span class="checkmark"></span>
+                                    允许管理用户
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 表单操作按钮 -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        {% if user %}
+                            <i class="fas fa-save"></i> 保存更改
+                        {% else %}
+                            <i class="fas fa-user-plus"></i> 创建用户
+                        {% endif %}
+                    </button>
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 取消
+                    </a>
+                    {% if user and user.id != current_user.id %}
+                        <button type="button" class="btn btn-danger" id="delete-user-btn">
+                            <i class="fas fa-trash-alt"></i> 删除用户
+                        </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+        
+        <!-- 用户统计信息 -->
+        {% if user %}
+            <div class="stats-container">
+                <div class="stats-title">用户统计</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.post_count }}</div>
+                        <div class="stat-label">已发表文章</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.comment_count }}</div>
+                        <div class="stat-label">发表评论</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ user.created_at.strftime('%Y-%m-%d') }}</div>
+                        <div class="stat-label">注册时间</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {% if user.last_login %}{{ user.last_login.strftime('%Y-%m-%d') }}{% else %}从未登录{% endif %}
+                        </div>
+                        <div class="stat-label">最后登录</div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 头像上传预览
+            const avatarInput = document.querySelector('input[name="avatar"]');
+            const avatarPreview = document.getElementById('avatar-preview');
+            
+            if (avatarInput && avatarPreview) {
+                avatarInput.addEventListener('change', function(e) {
+                    if (e.target.files && e.target.files[0]) {
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            // 检查是否已存在img标签
+                            let img = avatarPreview.querySelector('img');
+                            if (!img) {
+                                img = document.createElement('img');
+                                avatarPreview.innerHTML = '';
+                                avatarPreview.appendChild(img);
+                            }
+                            img.src = e.target.result;
+                            img.alt = 'Avatar preview';
+                        }
+                        
+                        reader.readAsDataURL(e.target.files[0]);
+                    }
+                });
+            }
+            
+            // 角色选择影响权限设置
+            const roleSelect = document.getElementById('role');
+            const permissionCheckboxes = document.querySelectorAll('.permissions-section input[type="checkbox"]');
+            
+            if (roleSelect && permissionCheckboxes.length > 0) {
+                function updatePermissionsByRole() {
+                    const selectedRole = roleSelect.value;
+                    
+                    // 根据角色预设权限
+                    switch(selectedRole) {
+                        case 'admin':
+                            permissionCheckboxes.forEach(checkbox => {
+                                checkbox.checked = true;
+                                checkbox.disabled = false;
+                            });
+                            break;
+                        case 'editor':
+                            permissionCheckboxes.forEach(checkbox => {
+                                checkbox.checked = true;
+                                checkbox.disabled = false;
+                            });
+                            break;
+                        case 'author':
+                            permissionCheckboxes.forEach(checkbox => {
+                                checkbox.checked = checkbox.name === 'can_publish';
+                                checkbox.disabled = checkbox.name !== 'can_publish';
+                            });
+                            break;
+                        case 'user':
+                        default:
+                            permissionCheckboxes.forEach(checkbox => {
+                                checkbox.checked = false;
+                                checkbox.disabled = true;
+                            });
+                            break;
+                    }
+                }
+                
+                // 初始加载时更新权限
+                updatePermissionsByRole();
+                
+                // 角色改变时更新权限
+                roleSelect.addEventListener('change', updatePermissionsByRole);
+            }
+            
+            // 删除用户确认
+            const deleteBtn = document.getElementById('delete-user-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function() {
+                    const username = "{{ user.username }}";
+                    
+                    let confirmMessage = `确定要删除用户 "${username}" 吗？`;
+                    confirmMessage += "\n\n警告：此操作不可撤销，用户的所有数据（文章、评论等）可能会被一并删除！";
+                    
+                    if (confirm(confirmMessage)) {
+                        window.location.href = "{{ url_for('admin.delete_user', id=user.id) }}";
+                    }
+                });
+            }
+            
+            // 密码强度检查
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+                passwordInput.addEventListener('input', function() {
+                    const password = this.value;
+                    if (password.length > 0) {
+                        // 简单的密码强度检查
+                        let strength = 0;
+                        if (password.length >= 8) strength++;
+                        if (/[A-Z]/.test(password)) strength++;
+                        if (/[a-z]/.test(password)) strength++;
+                        if (/[0-9]/.test(password)) strength++;
+                        if (/[^A-Za-z0-9]/.test(password)) strength++;
+                        
+                        // 这里可以添加密码强度指示器
+                        console.log('密码强度:', strength);
+                    }
+                });
+            }
+            
+            // 表单验证
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const passwordInput = document.getElementById('password');
+                    const confirmPasswordInput = document.getElementById('confirm_password');
+                    
+                    // 如果填写了密码，检查密码一致性
+                    if (passwordInput.value && passwordInput.value !== confirmPasswordInput.value) {
+                        alert('两次输入的密码不一致');
+                        confirmPasswordInput.focus();
+                        e.preventDefault();
+                        return;
+                    }
+                    
+                    // 检查密码强度
+                    if (passwordInput.value && passwordInput.value.length < 8) {
+                        alert('密码长度至少为8位');
+                        passwordInput.focus();
+                        e.preventDefault();
+                        return;
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}
